@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Block as BlockType } from './types/block';
 import { PyramidView } from './components/PyramidView';
 import { BlockForm } from './components/BlockForm';
+import { BlockInput } from './components/BlockInput';
+import { BlockList } from './components/BlockList';
+import { BlockDescriptionModal } from './components/BlockDescriptionModal';
 import { api } from './services/api';
 import './App.css';
 
@@ -10,6 +13,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
+  const [descriptionModalBlock, setDescriptionModalBlock] = useState<BlockType | null>(null);
 
   useEffect(() => {
     loadBlocks();
@@ -35,6 +39,38 @@ function App() {
     } catch (error) {
       console.error('블록 생성 실패:', error);
       alert('블록 생성에 실패했습니다.');
+    }
+  };
+
+  const handleQuickCreate = async (title: string) => {
+    try {
+      // 레벨 -1로 설정하여 아직 배치되지 않은 블록으로 표시
+      // 실제로는 레벨 0이 아닌 특별한 값으로 관리하거나, 별도 필드로 관리
+      // 일단 level을 -1로 설정하고, 피라미드에서는 level >= 0만 표시
+      const unassignedBlocks = blocks.filter((b) => b.level < 0);
+      const newBlock = await api.createBlock({
+        title,
+        description: '',
+        level: -1, // 아직 배치되지 않은 블록
+        order: unassignedBlocks.length,
+      });
+      setBlocks([...blocks, newBlock]);
+    } catch (error) {
+      console.error('블록 생성 실패:', error);
+      alert('블록 생성에 실패했습니다.');
+    }
+  };
+
+  const handleBlockClick = (block: BlockType) => {
+    setDescriptionModalBlock(block);
+  };
+
+  const handleSaveDescription = async (blockId: string, description: string) => {
+    try {
+      await handleUpdateBlock(blockId, { description });
+    } catch (error) {
+      console.error('설명 저장 실패:', error);
+      alert('설명 저장에 실패했습니다.');
     }
   };
 
@@ -96,61 +132,57 @@ function App() {
           }}
         >
           <h1 style={{ margin: 0, fontSize: '24px' }}>ThinkBlock</h1>
-          <button
-            onClick={() => {
-              setEditingBlock(null);
-              setShowForm(true);
-            }}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              color: '#1976d2',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            + 블록 추가
-          </button>
         </div>
       </header>
 
-      <main>
-        {blocks.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '60px 20px',
-              color: '#666',
-            }}
-          >
-            <p style={{ fontSize: '18px', marginBottom: '16px' }}>
-              아직 블록이 없습니다.
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: '#1976d2',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '16px',
-              }}
-            >
-              첫 번째 블록 추가하기
-            </button>
-          </div>
-        ) : (
+      <main
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          height: 'calc(100vh - 80px)',
+          backgroundColor: '#fafafa',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 왼쪽: 입력 영역 및 블록 목록 */}
+        <div
+          style={{
+            width: '350px',
+            flexShrink: 0,
+            backgroundColor: 'white',
+            borderRight: '2px solid #e0e0e0',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <BlockInput onSubmit={handleQuickCreate} />
+          <BlockList
+            blocks={blocks}
+            onBlockClick={handleBlockClick}
+            onBlockDelete={handleDeleteBlock}
+            onBlockEdit={handleEditBlock}
+          />
+        </div>
+
+        {/* 오른쪽: 피라미드 영역 */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
           <PyramidView
             blocks={blocks}
             onBlockUpdate={handleUpdateBlock}
             onBlockDelete={handleDeleteBlock}
             onBlockEdit={handleEditBlock}
+            onBlockClick={handleBlockClick}
           />
-        )}
+        </div>
       </main>
 
       {showForm && (
@@ -180,6 +212,14 @@ function App() {
             }}
           />
         </>
+      )}
+
+      {descriptionModalBlock && (
+        <BlockDescriptionModal
+          block={descriptionModalBlock}
+          onSave={handleSaveDescription}
+          onClose={() => setDescriptionModalBlock(null)}
+        />
       )}
     </div>
   );

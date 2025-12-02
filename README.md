@@ -38,7 +38,19 @@ thinkblock/
 
 ## 로컬 테스트 (빠른 시작)
 
-### 백엔드 실행
+### 🚀 한 번에 실행하기 (추천)
+
+프로젝트 루트에서:
+
+```bash
+python app.py
+```
+
+이 명령어 하나로 백엔드와 프론트엔드가 동시에 실행됩니다!
+
+### 개별 실행하기
+
+#### 백엔드 실행
 
 1. 백엔드 디렉토리로 이동:
 ```bash
@@ -64,9 +76,9 @@ pip install -r requirements.txt
 python run_local.py
 ```
 
-백엔드가 `http://localhost:8000`에서 실행됩니다.
+백엔드가 `http://localhost:8002`에서 실행됩니다.
 
-### 프론트엔드 실행
+#### 프론트엔드 실행
 
 1. 프론트엔드 디렉토리로 이동:
 ```bash
@@ -83,7 +95,7 @@ npm install
 npm run dev
 ```
 
-4. 브라우저에서 표시된 주소 (보통 `http://localhost:5173`) 접속
+4. 브라우저에서 표시된 주소 (보통 `http://localhost:3000` 또는 `http://localhost:5173`) 접속
 
 ## Firestore 사용하기 (프로덕션)
 
