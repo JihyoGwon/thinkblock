@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { DndContext, DragEndEvent, closestCenter, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -103,15 +103,15 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   // 레벨별로 렌더링 (위에서 아래로, 높은 레벨부터 - 일반 피라미드: 위가 좁고 아래가 넓음)
   const levels = Array.from({ length: maxLevel + 1 }, (_, i) => maxLevel - i);
 
-  // 레벨에 따른 배경색 (높은 레벨일수록 진함)
+  // 레벨에 따른 배경색 (깔끔한 그레이 톤)
   const getLevelBgColor = (level: number) => {
     const colors = [
-      '#f5f5f5', // level 0 - 가장 밝음 (기반)
-      '#f0f4f8',
-      '#e8f0f7',
-      '#e0ecf5',
-      '#d8e8f3',
-      '#d0e4f1', // level 5
+      '#ffffff', // level 0 - 가장 밝음 (기반)
+      '#f8f9fa',
+      '#f1f3f5',
+      '#e9ecef',
+      '#dee2e6',
+      '#ced4da', // level 5
     ];
     return colors[Math.min(level, colors.length - 1)];
   };
@@ -134,37 +134,6 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           height: '100%',
         }}
       >
-        {/* 왼쪽 레벨 사이드바 */}
-        <div
-          style={{
-            width: '100%',
-            paddingBottom: '12px',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: '12px',
-            flexWrap: 'wrap',
-          }}
-        >
-          {levels.map((level) => (
-            <div
-              key={level}
-              style={{
-                fontSize: '12px',
-                fontWeight: '600',
-                color: level === maxLevel && level > 0 ? '#1976d2' : level === 0 ? '#4caf50' : '#888',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                backgroundColor: level === maxLevel && level > 0 ? '#e3f2fd' : level === 0 ? '#e8f5e9' : '#f5f5f5',
-                border: '2px solid',
-                borderColor: level === maxLevel && level > 0 ? '#1976d2' : level === 0 ? '#4caf50' : '#e0e0e0',
-              }}
-            >
-              {level === maxLevel && level > 0 ? '목표 (Goal)' : level === 0 ? '기반 (Foundation)' : `Level ${level}`}
-            </div>
-          ))}
-        </div>
-
         {/* 피라미드 영역 */}
         <div
           style={{
@@ -174,7 +143,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
             gap: '16px',
             alignItems: 'center',
             overflowY: 'auto',
-            padding: '0 20px',
+            padding: '32px 20px',
           }}
         >
           {levels.map((level) => {
@@ -188,14 +157,37 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                 style={{
                   width: `${levelWidth}%`,
                   backgroundColor: getLevelBgColor(level),
-                  borderRadius: '12px',
-                  padding: '16px',
-                  border: '2px solid',
-                  borderColor: level === maxLevel && level > 0 ? '#1976d2' : level === 0 ? '#4caf50' : '#e0e0e0',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  border: '1px solid',
+                  borderColor: level === maxLevel && level > 0 ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
                   transition: 'all 0.3s ease',
-                  boxShadow: hasBlocks ? '0 4px 8px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.05)',
+                  boxShadow: hasBlocks ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.03)',
                 }}
               >
+                {/* 레벨 태그 */}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: level === maxLevel && level > 0 ? '#6366f1' : level === 0 ? '#10b981' : '#6c757d',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: level === maxLevel && level > 0 ? '#eef2ff' : level === 0 ? '#ecfdf5' : '#f1f3f5',
+                      border: 'none',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {level === maxLevel && level > 0 ? '목표' : level === 0 ? '기반' : `Level ${level}`}
+                  </span>
+                </div>
                 {hasBlocks ? (
                   <SortableContext
                     items={levelBlocks.map((b) => b.id)}
@@ -214,11 +206,11 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                     </DropZone>
                   </SortableContext>
                 ) : (
-                  <DropZone level={level}>
-                    <span style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>
-                      여기에 블록을 드롭하세요
-                    </span>
-                  </DropZone>
+                <DropZone level={level}>
+                  <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic' }}>
+                    여기에 블록을 드롭하세요
+                  </span>
+                </DropZone>
                 )}
               </div>
             );

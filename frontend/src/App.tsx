@@ -16,17 +16,28 @@ function App() {
   const [descriptionModalBlock, setDescriptionModalBlock] = useState<BlockType | null>(null);
 
   useEffect(() => {
+    console.log('App 컴포넌트 마운트됨, loadBlocks 호출');
     loadBlocks();
   }, []);
 
   const loadBlocks = async () => {
     try {
       setLoading(true);
+      console.log('블록 로드 시작...');
       const data = await api.getBlocks();
-      setBlocks(data);
-    } catch (error) {
+      console.log('블록 로드 성공:', data);
+      setBlocks(Array.isArray(data) ? data : []);
+    } catch (error: any) {
       console.error('블록 로드 실패:', error);
+      console.error('에러 상세:', error.message || error);
+      // 에러가 발생해도 빈 배열로 설정하여 로딩 상태 해제
+      setBlocks([]);
+      // 네트워크 에러인 경우 사용자에게 알림
+      if (error?.message) {
+        alert(`블록 로드 실패: ${error.message}`);
+      }
     } finally {
+      console.log('로딩 상태 해제');
       setLoading(false);
     }
   };
@@ -105,9 +116,15 @@ function App() {
   const maxLevel = Math.max(...blocks.map((b) => b.level), 0);
 
   if (loading) {
+    console.log('로딩 상태:', loading);
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
-        <div>로딩 중...</div>
+        <div style={{ fontSize: '18px', marginBottom: '20px' }}>로딩 중...</div>
+        <div style={{ fontSize: '14px', color: '#666' }}>
+          백엔드 서버가 실행 중인지 확인하세요.
+          <br />
+          콘솔(F12)에서 에러 메시지를 확인하세요.
+        </div>
       </div>
     );
   }
@@ -116,74 +133,77 @@ function App() {
     <div className="App">
       <header
         style={{
-          backgroundColor: '#1976d2',
-          color: 'white',
-          padding: '16px 24px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e9ecef',
+          padding: '20px 32px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
       >
         <div
           style={{
-            maxWidth: '1200px',
+            maxWidth: '100%',
             margin: '0 auto',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <h1 style={{ margin: 0, fontSize: '24px' }}>ThinkBlock</h1>
+          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '600', color: '#212529' }}>
+            ThinkBlock
+          </h1>
         </div>
       </header>
 
       <main
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          height: 'calc(100vh - 80px)',
-          backgroundColor: '#fafafa',
-          overflow: 'hidden',
-        }}
-      >
-        {/* 왼쪽: 입력 영역 및 블록 목록 */}
-        <div
           style={{
-            width: '350px',
-            flexShrink: 0,
-            backgroundColor: 'white',
-            borderRight: '2px solid #e0e0e0',
-            padding: '24px',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
+            height: 'calc(100vh - 80px)',
+            backgroundColor: '#fafafa',
             overflow: 'hidden',
           }}
         >
-          <BlockInput onSubmit={handleQuickCreate} />
-          <BlockList
-            blocks={blocks}
-            onBlockClick={handleBlockClick}
-            onBlockDelete={handleDeleteBlock}
-            onBlockEdit={handleEditBlock}
-          />
-        </div>
+          {/* 왼쪽: 입력 영역 및 블록 목록 */}
+          <div
+            style={{
+              width: '380px',
+              flexShrink: 0,
+              backgroundColor: '#f8f9fa',
+              borderRight: '1px solid #e9ecef',
+              padding: '32px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <BlockInput onSubmit={handleQuickCreate} />
+            <BlockList
+              blocks={blocks}
+              onBlockClick={handleBlockClick}
+              onBlockDelete={handleDeleteBlock}
+              onBlockEdit={handleEditBlock}
+            />
+          </div>
 
-        {/* 오른쪽: 피라미드 영역 */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          <PyramidView
-            blocks={blocks}
-            onBlockUpdate={handleUpdateBlock}
-            onBlockDelete={handleDeleteBlock}
-            onBlockEdit={handleEditBlock}
-            onBlockClick={handleBlockClick}
-          />
-        </div>
-      </main>
+          {/* 오른쪽: 피라미드 영역 */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              backgroundColor: '#ffffff',
+            }}
+          >
+            <PyramidView
+              blocks={blocks}
+              onBlockUpdate={handleUpdateBlock}
+              onBlockDelete={handleDeleteBlock}
+              onBlockEdit={handleEditBlock}
+              onBlockClick={handleBlockClick}
+            />
+          </div>
+        </main>
 
       {showForm && (
         <>

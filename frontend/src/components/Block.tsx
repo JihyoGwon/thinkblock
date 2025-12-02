@@ -26,19 +26,19 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // 레벨에 따른 색상 (아래에서 위로 갈수록 진해짐)
+  // 레벨에 따른 색상 (깔끔한 그레이 톤)
   const getLevelColor = (level: number) => {
     const colors = [
-      '#e3f2fd', // level 0 - 가장 밝음 (기반)
-      '#bbdefb',
-      '#90caf9',
-      '#64b5f6',
-      '#42a5f5',
-      '#2196f3', // level 5
-      '#1e88e5',
-      '#1976d2',
-      '#1565c0',
-      '#0d47a1', // level 9 - 가장 어두움 (목표)
+      '#ffffff', // level 0 - 가장 밝음 (기반)
+      '#f8f9fa',
+      '#f1f3f5',
+      '#e9ecef',
+      '#dee2e6',
+      '#ced4da', // level 5
+      '#adb5bd',
+      '#868e96',
+      '#495057',
+      '#212529', // level 9 - 가장 어두움 (목표)
     ];
     return colors[Math.min(level, colors.length - 1)];
   };
@@ -63,32 +63,32 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }
       style={{
         ...style,
         backgroundColor: getLevelColor(block.level),
-        border: '2px solid',
-        borderColor: isDragging ? '#1976d2' : 'rgba(25, 118, 210, 0.3)',
-        borderRadius: '10px',
-        padding: '16px',
-        margin: '6px',
+        border: '1px solid',
+        borderColor: isDragging ? '#6366f1' : '#e9ecef',
+        borderRadius: '12px',
+        padding: '20px',
+        margin: '8px',
         cursor: isDragging ? 'grabbing' : 'pointer',
-        minWidth: '220px',
-        maxWidth: '300px',
+        minWidth: '240px',
+        maxWidth: '320px',
         boxShadow: isDragging 
-          ? '0 8px 16px rgba(0,0,0,0.2)' 
-          : '0 2px 6px rgba(0,0,0,0.1)',
+          ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
+          : '0 2px 8px rgba(0,0,0,0.04)',
         transition: 'all 0.2s ease',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
         <div style={{ flex: 1 }}>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 'bold', color: '#333' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
             {block.title}
           </h3>
           {block.description && (
-            <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#555' }}>
+            <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#6c757d', lineHeight: '1.5' }}>
               {block.description}
             </p>
           )}
           {!block.description && (
-            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+            <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#adb5bd', fontStyle: 'italic' }}>
               클릭하여 설명 추가
             </p>
           )}
@@ -99,22 +99,25 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }
             onDelete(block.id);
           }}
           style={{
-            padding: '6px',
+            padding: '8px',
             border: 'none',
-            borderRadius: '4px',
+            borderRadius: '8px',
             backgroundColor: 'transparent',
-            color: '#d32f2f',
+            color: '#dc3545',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'all 0.2s',
+            opacity: 0.6,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffebee';
+            e.currentTarget.style.backgroundColor = '#fff5f5';
+            e.currentTarget.style.opacity = '1';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.opacity = '0.6';
           }}
           title="삭제"
         >

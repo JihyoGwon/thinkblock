@@ -59,17 +59,18 @@ export const BlockDescriptionModal: React.FC<BlockDescriptionModalProps> = ({
           left: '50%',
           transform: 'translate(-50%, -50%)',
           backgroundColor: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+          padding: '32px',
+          borderRadius: '16px',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
           zIndex: 1000,
-          minWidth: '500px',
-          maxWidth: '700px',
+          minWidth: '520px',
+          maxWidth: '720px',
+          border: '1px solid #e9ecef',
         }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <h2 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: 'bold' }}>
+        <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', fontWeight: '600', color: '#212529' }}>
           {block.title}
         </h2>
         <div style={{ marginBottom: '16px' }}>
@@ -92,20 +93,26 @@ export const BlockDescriptionModal: React.FC<BlockDescriptionModalProps> = ({
             rows={8}
             style={{
               width: '100%',
-              padding: '12px',
-              border: '2px solid #e0e0e0',
-              borderRadius: '8px',
+              padding: '14px 16px',
+              border: '1px solid #e9ecef',
+              borderRadius: '12px',
               fontSize: '14px',
               resize: 'vertical',
               outline: 'none',
-              transition: 'border-color 0.2s',
+              transition: 'all 0.2s',
               fontFamily: 'inherit',
+              backgroundColor: '#f8f9fa',
+              color: '#212529',
             }}
             onFocus={(e) => {
-              e.target.style.borderColor = '#1976d2';
+              e.target.style.borderColor = '#6366f1';
+              e.target.style.backgroundColor = 'white';
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
             }}
             onBlur={(e) => {
-              e.target.style.borderColor = '#e0e0e0';
+              e.target.style.borderColor = '#e9ecef';
+              e.target.style.backgroundColor = '#f8f9fa';
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>
@@ -114,12 +121,20 @@ export const BlockDescriptionModal: React.FC<BlockDescriptionModalProps> = ({
             onClick={onClose}
             style={{
               padding: '10px 20px',
-              border: '1px solid #ddd',
-              borderRadius: '6px',
+              border: '1px solid #e9ecef',
+              borderRadius: '10px',
               backgroundColor: 'white',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
+              color: '#495057',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8f9fa';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
             }}
           >
             취소
@@ -129,12 +144,19 @@ export const BlockDescriptionModal: React.FC<BlockDescriptionModalProps> = ({
             style={{
               padding: '10px 20px',
               border: 'none',
-              borderRadius: '6px',
-              backgroundColor: '#1976d2',
+              borderRadius: '10px',
+              backgroundColor: '#6366f1',
               color: 'white',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: '600',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#4f46e5';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#6366f1';
             }}
           >
             저장

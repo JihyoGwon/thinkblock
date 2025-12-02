@@ -16,16 +16,16 @@ export const DropZone: React.FC<DropZoneProps> = ({ level, children }) => {
       ref={setNodeRef}
       style={{
         minHeight: isOver ? '100px' : '60px',
-        border: isOver ? '3px dashed #1976d2' : '2px dashed transparent',
-        borderRadius: '8px',
-        backgroundColor: isOver ? '#e3f2fd' : 'transparent',
+        border: isOver ? '2px dashed #6366f1' : '1px dashed transparent',
+        borderRadius: '12px',
+        backgroundColor: isOver ? '#eef2ff' : 'transparent',
         transition: 'all 0.2s ease',
-        padding: isOver ? '20px' : '16px',
+        padding: isOver ? '24px' : '20px',
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: '8px',
+        gap: '12px',
       }}
     >
       {children}

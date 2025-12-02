@@ -55,17 +55,17 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit }) => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#333', flex: 1 }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#212529', flex: 1 }}>
             블록 추가
           </h2>
           <button
             onClick={() => setIsOpen(!isOpen)}
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
               border: 'none',
-              backgroundColor: '#1976d2',
+              backgroundColor: isOpen ? '#6c757d' : '#6366f1',
               color: 'white',
               fontSize: '24px',
               cursor: 'pointer',
@@ -73,14 +73,14 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit }) => {
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1565c0';
-              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.backgroundColor = isOpen ? '#5a6268' : '#4f46e5';
+              e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#1976d2';
+              e.currentTarget.style.backgroundColor = isOpen ? '#6c757d' : '#6366f1';
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
@@ -105,12 +105,22 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit }) => {
             placeholder="블록 제목을 입력하세요..."
             style={{
               width: '100%',
-              padding: '12px',
-              border: '2px solid #1976d2',
-              borderRadius: '6px',
-              fontSize: '16px',
+              padding: '14px 16px',
+              border: '1px solid #e9ecef',
+              borderRadius: '12px',
+              fontSize: '15px',
               outline: 'none',
-              transition: 'border-color 0.2s',
+              transition: 'all 0.2s',
+              backgroundColor: 'white',
+              color: '#212529',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#6366f1';
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e9ecef';
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>

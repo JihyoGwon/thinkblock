@@ -26,16 +26,19 @@ export const BlockList: React.FC<BlockListProps> = ({
         paddingTop: '20px',
       }}
     >
-      <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#333' }}>
+      <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: '600', color: '#495057' }}>
         블록 목록 ({unassignedBlocks.length})
       </h3>
       {unassignedBlocks.length === 0 ? (
         <div
           style={{
             textAlign: 'center',
-            padding: '40px 20px',
-            color: '#999',
+            padding: '60px 20px',
+            color: '#adb5bd',
             fontSize: '14px',
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            border: '1px dashed #e9ecef',
           }}
         >
           추가된 블록이 여기에 표시됩니다.
