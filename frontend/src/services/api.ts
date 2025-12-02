@@ -3,9 +3,9 @@ import { Block, BlockCreate } from '../types/block';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
 
-// axios 인스턴스 생성 (타임아웃 3초)
+// axios 인스턴스 생성 (타임아웃 2초)
 const apiClient = axios.create({
-  timeout: 3000,
+  timeout: 2000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,12 +20,14 @@ export const api = {
       console.log('API 응답:', response.data);
       return response.data?.blocks || [];
     } catch (error: any) {
-      console.error('API 호출 실패:', error.message || error);
-      if (error.code === 'ECONNABORTED') {
-        throw new Error('요청 시간 초과: 백엔드 서버가 실행 중인지 확인하세요.');
-      }
-      if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
-        throw new Error('백엔드 서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.');
+      console.error('API 호출 실패:', error);
+      console.error('에러 코드:', error.code);
+      console.error('에러 메시지:', error.message);
+      
+      // 타임아웃이나 연결 실패 시 빈 배열 반환 (로딩 상태 해제를 위해)
+      if (error.code === 'ECONNABORTED' || error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+        console.warn('백엔드 서버에 연결할 수 없습니다. 빈 배열을 반환합니다.');
+        return [];
       }
       throw error;
     }

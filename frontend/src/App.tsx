@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
 import { PyramidView } from './components/PyramidView';
 import { BlockForm } from './components/BlockForm';
@@ -17,30 +19,35 @@ function App() {
 
   useEffect(() => {
     console.log('App 컴포넌트 마운트됨, loadBlocks 호출');
-    loadBlocks();
-  }, []);
-
-  const loadBlocks = async () => {
-    try {
-      setLoading(true);
-      console.log('블록 로드 시작...');
-      const data = await api.getBlocks();
-      console.log('블록 로드 성공:', data);
-      setBlocks(Array.isArray(data) ? data : []);
-    } catch (error: any) {
-      console.error('블록 로드 실패:', error);
-      console.error('에러 상세:', error.message || error);
-      // 에러가 발생해도 빈 배열로 설정하여 로딩 상태 해제
-      setBlocks([]);
-      // 네트워크 에러인 경우 사용자에게 알림
-      if (error?.message) {
-        alert(`블록 로드 실패: ${error.message}`);
+    let cancelled = false;
+    
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        console.log('블록 로드 시작...');
+        const data = await api.getBlocks();
+        console.log('블록 로드 성공:', data);
+        if (!cancelled) {
+          setBlocks(Array.isArray(data) ? data : []);
+          setLoading(false);
+          console.log('로딩 상태 해제');
+        }
+      } catch (error: any) {
+        console.error('블록 로드 실패:', error);
+        if (!cancelled) {
+          setBlocks([]);
+          setLoading(false);
+          console.log('로딩 상태 해제 (에러)');
+        }
       }
-    } finally {
-      console.log('로딩 상태 해제');
-      setLoading(false);
-    }
-  };
+    };
+    
+    fetchData();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleCreateBlock = async (blockData: Omit<BlockType, 'id'>) => {
     try {
@@ -113,18 +120,88 @@ function App() {
     setShowForm(true);
   };
 
-  const maxLevel = Math.max(...blocks.map((b) => b.level), 0);
+  // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
+  const blocksByLevel = useMemo(() => {
+    const grouped: { [level: number]: BlockType[] } = {};
+    blocks
+      .filter((block) => block.level >= 0)
+      .forEach((block) => {
+        if (!grouped[block.level]) {
+          grouped[block.level] = [];
+        }
+        grouped[block.level].push(block);
+      });
+
+    Object.keys(grouped).forEach((level) => {
+      grouped[Number(level)].sort((a, b) => a.order - b.order);
+    });
+
+    return grouped;
+  }, [blocks]);
+
+  const maxLevel = useMemo(() => {
+    const max = Math.max(...blocks.map((b) => b.level), -1);
+    return Math.max(max, 4);
+  }, [blocks]);
+
+  // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const activeBlock = blocks.find((b) => b.id === active.id);
+    
+    // 드롭존에 드롭한 경우 (빈 레벨에 드롭)
+    if (typeof over.id === 'string' && over.id.startsWith('dropzone-level-')) {
+      if (!activeBlock) return;
+      const targetLevel = parseInt(over.id.replace('dropzone-level-', ''));
+      const targetLevelBlocks = blocksByLevel[targetLevel] || [];
+      const newOrder = targetLevelBlocks.length;
+
+      handleUpdateBlock(activeBlock.id, {
+        level: targetLevel,
+        order: newOrder,
+      });
+      return;
+    }
+
+    const overBlock = blocks.find((b) => b.id === over.id);
+
+    if (!activeBlock || !overBlock) return;
+
+    // 같은 레벨 내에서 드래그: order만 변경
+    if (activeBlock.level === overBlock.level && activeBlock.level >= 0) {
+      const levelBlocks = blocksByLevel[activeBlock.level] || [];
+      const oldIndex = levelBlocks.findIndex((b) => b.id === active.id);
+      const newIndex = levelBlocks.findIndex((b) => b.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = arrayMove(levelBlocks, oldIndex, newIndex);
+
+        newOrder.forEach((block, index) => {
+          if (block.order !== index) {
+            handleUpdateBlock(block.id, { order: index });
+          }
+        });
+      }
+    } else if (overBlock.level >= 0) {
+      // 다른 레벨로 드래그: level과 order 변경
+      const targetLevel = overBlock.level;
+      const targetLevelBlocks = blocksByLevel[targetLevel] || [];
+      const newOrder = targetLevelBlocks.length;
+
+      handleUpdateBlock(activeBlock.id, {
+        level: targetLevel,
+        order: newOrder,
+      });
+    }
+  };
 
   if (loading) {
-    console.log('로딩 상태:', loading);
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <div style={{ fontSize: '18px', marginBottom: '20px' }}>로딩 중...</div>
-        <div style={{ fontSize: '14px', color: '#666' }}>
-          백엔드 서버가 실행 중인지 확인하세요.
-          <br />
-          콘솔(F12)에서 에러 메시지를 확인하세요.
-        </div>
       </div>
     );
   }
@@ -154,7 +231,8 @@ function App() {
         </div>
       </header>
 
-      <main
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <main
           style={{
             display: 'flex',
             flexDirection: 'row',
@@ -204,6 +282,7 @@ function App() {
             />
           </div>
         </main>
+      </DndContext>
 
       {showForm && (
         <>
