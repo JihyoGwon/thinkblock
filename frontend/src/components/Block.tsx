@@ -25,21 +25,12 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // 레벨에 따른 색상 (깔끔한 그레이 톤)
+  // 레벨에 따른 색상 (밝은 회색+반투명)
   const getLevelColor = (level: number) => {
-    const colors = [
-      '#ffffff', // level 0 - 가장 밝음 (기반)
-      '#f8f9fa',
-      '#f1f3f5',
-      '#e9ecef',
-      '#dee2e6',
-      '#ced4da', // level 5
-      '#adb5bd',
-      '#868e96',
-      '#495057',
-      '#212529', // level 9 - 가장 어두움 (목표)
-    ];
-    return colors[Math.min(level, colors.length - 1)];
+    // 밝은 회색 배경에 반투명 효과 적용
+    // 레벨이 높을수록(목표) 약간 더 어둡게
+    const baseColor = level >= 5 ? 'rgba(240, 240, 240, 0.95)' : 'rgba(250, 250, 250, 0.95)';
+    return baseColor;
   };
 
   return (
@@ -54,8 +45,8 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
         border: '1px solid',
         borderColor: isDragging ? '#6366f1' : '#e9ecef',
         borderRadius: '12px',
-        padding: '16px',
-        margin: '8px',
+        padding: '12px',
+        margin: '4px',
         cursor: isDragging ? 'grabbing' : 'grab',
         minWidth: '320px',
         maxWidth: '480px',

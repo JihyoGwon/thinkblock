@@ -85,16 +85,19 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
+          gap: '8px',
           alignItems: 'center',
           overflowY: 'auto',
-          padding: '32px 20px',
+          padding: '16px 20px',
         }}
       >
         {levels.map((level) => {
           const levelBlocks = blocksByLevel[level] || [];
           const hasBlocks = levelBlocks.length > 0;
           const levelWidth = getLevelWidth(level);
+
+          const blockCount = levelBlocks.length;
+          const isSingleBlock = blockCount === 1;
 
           return (
             <div
@@ -103,11 +106,13 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                 width: `${levelWidth}%`,
                 backgroundColor: getLevelBgColor(level),
                 borderRadius: '16px',
-                padding: '24px',
+                padding: isSingleBlock ? '8px 12px' : '12px',
                 border: '1px solid',
                 borderColor: level === maxLevel && level > 0 ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
                 transition: 'all 0.3s ease',
                 boxShadow: hasBlocks ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.03)',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               {/* 레벨 태그 */}
@@ -115,7 +120,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                 style={{
                   display: 'flex',
                   justifyContent: 'flex-start',
-                  marginBottom: '16px',
+                  marginBottom: hasBlocks ? (isSingleBlock ? '4px' : '8px') : '0',
                 }}
               >
                 <span
