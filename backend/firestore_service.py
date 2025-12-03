@@ -251,3 +251,65 @@ def delete_project(project_id: str) -> bool:
     
     return True
 
+def duplicate_project(source_project_id: str, new_project_name: str, copy_structure: bool = True) -> dict:
+    """프로젝트 복제
+    Args:
+        source_project_id: 복제할 원본 프로젝트 ID
+        new_project_name: 새 프로젝트 이름
+        copy_structure: True면 전체 복사 (계층 구조 유지), False면 블록만 복사 (level=-1)
+    """
+    import uuid
+    from datetime import datetime
+    
+    # 원본 프로젝트 조회
+    source_project = get_project(source_project_id)
+    if not source_project:
+        raise ValueError(f"원본 프로젝트를 찾을 수 없습니다: {source_project_id}")
+    
+    # 원본 블록과 카테고리 가져오기
+    source_blocks = get_all_blocks(source_project_id)
+    source_categories = get_categories(source_project_id)
+    
+    # 새 프로젝트 생성
+    new_project_id = str(uuid.uuid4())
+    new_project_data = {
+        "id": new_project_id,
+        "name": new_project_name,
+        "createdAt": datetime.now(),
+        "updatedAt": datetime.now(),
+    }
+    
+    project_ref = db.collection(PROJECTS_COLLECTION).document(new_project_id)
+    project_ref.set(new_project_data)
+    
+    # 카테고리 복사 (무조건 복사)
+    if source_categories:
+        update_categories(new_project_id, source_categories)
+    
+    # 블록 복사
+    blocks_ref = project_ref.collection(BLOCKS_COLLECTION)
+    for source_block in source_blocks:
+        new_block_data = {
+            "title": source_block.get("title", ""),
+            "description": source_block.get("description", ""),
+            "category": source_block.get("category"),
+        }
+        
+        if copy_structure:
+            # 전체 복사: level과 order 그대로 복사
+            new_block_data["level"] = source_block.get("level", 0)
+            new_block_data["order"] = source_block.get("order", 0)
+        else:
+            # 블록만 복사: level을 -1로 설정 (좌측 리스트에 표시)
+            new_block_data["level"] = -1
+            new_block_data["order"] = 0
+        
+        # 새 블록 생성
+        block_doc_ref = blocks_ref.document()
+        new_block_data["id"] = block_doc_ref.id
+        block_doc_ref.set(new_block_data)
+    
+    print(f"✅ 프로젝트 복제 성공: source_id={source_project_id}, new_id={new_project_id}, copy_structure={copy_structure}, blocks={len(source_blocks)}")
+    
+    return new_project_data
+

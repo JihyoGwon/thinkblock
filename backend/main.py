@@ -28,6 +28,7 @@ else:
         get_all_projects,
         update_project,
         delete_project,
+        duplicate_project,
     )
     print("📦 Firestore를 사용합니다")
 
@@ -77,6 +78,10 @@ class ProjectCreate(BaseModel):
 
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
+
+class ProjectDuplicate(BaseModel):
+    name: str
+    copy_structure: bool = True  # True: 전체 복사, False: 블록만 복사
 
 @app.get("/api/projects/{project_id}/blocks")
 async def get_blocks(project_id: str):
@@ -243,6 +248,21 @@ async def delete_project_endpoint(project_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"프로젝트 삭제 실패: {str(e)}")
+
+@app.post("/api/projects/{project_id}/duplicate")
+async def duplicate_project_endpoint(project_id: str, duplicate_data: ProjectDuplicate):
+    """프로젝트 복제"""
+    try:
+        if USE_MEMORY_STORE:
+            # 메모리 스토어는 아직 복제 기능 미구현
+            raise HTTPException(status_code=501, detail="메모리 스토어에서는 복제 기능을 사용할 수 없습니다")
+        else:
+            new_project = duplicate_project(project_id, duplicate_data.name, duplicate_data.copy_structure)
+        return {"project": new_project}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 복제 실패: {str(e)}")
 
 # 정적 파일 서빙 (프로덕션 환경) - API 라우트 이후에 정의
 static_dir = os.path.join(os.path.dirname(__file__), "static")

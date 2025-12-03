@@ -92,5 +92,13 @@ export const api = {
   deleteProject: async (projectId: string): Promise<void> => {
     await apiClient.delete(`${API_BASE_URL}/api/projects/${projectId}`);
   },
+
+  duplicateProject: async (projectId: string, name: string, copyStructure: boolean): Promise<any> => {
+    const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/duplicate`, {
+      name,
+      copy_structure: copyStructure,
+    });
+    return response.data.project;
+  },
 };
 
