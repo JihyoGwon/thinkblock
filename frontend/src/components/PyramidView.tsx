@@ -65,7 +65,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           overflowY: 'auto',
           padding: '16px 20px',
         }}
@@ -135,7 +135,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                 </SortableContext>
               ) : (
               <DropZone level={level}>
-                <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic' }}>
+                <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
                   여기에 블록을 드롭하세요
                 </span>
               </DropZone>

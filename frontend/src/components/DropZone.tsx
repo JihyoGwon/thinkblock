@@ -23,7 +23,7 @@ export const DropZone: React.FC<DropZoneProps> = ({ level, children }) => {
         padding: isOver ? '24px' : '20px',
         display: 'flex',
         flexWrap: 'wrap',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         gap: '12px',
       }}
