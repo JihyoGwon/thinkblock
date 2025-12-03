@@ -26,6 +26,7 @@ class BlockModel(BaseModel):
     description: str
     level: int
     order: int
+    category: Optional[str] = None  # 카테고리 필드 추가
 
 def get_all_blocks() -> List[dict]:
     """모든 블록 조회"""
