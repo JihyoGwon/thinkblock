@@ -15,7 +15,7 @@ steps:
     args:
       - 'push'
       - '--all-tags'
-      - 'asia-northeast3-docker.pkg.dev/${PROJECT_ID}/thinkblock/thinkblock:${SHORT_SHA}'
+      - 'asia-northeast3-docker.pkg.dev/${PROJECT_ID}/thinkblock/thinkblock'
     id: 'push-image'
 
   # Cloud Run에 배포
