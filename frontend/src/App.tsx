@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
@@ -6,8 +6,9 @@ import { PyramidView } from './components/PyramidView';
 import { BlockForm } from './components/BlockForm';
 import { BlockInput } from './components/BlockInput';
 import { BlockList } from './components/BlockList';
-import { BlockDescriptionModal } from './components/BlockDescriptionModal';
 import { api } from './services/api';
+import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
+import { MODAL_STYLES } from './constants/styles';
 import './App.css';
 
 function App() {
@@ -15,29 +16,23 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
-  const [descriptionModalBlock, setDescriptionModalBlock] = useState<BlockType | null>(null);
 
   useEffect(() => {
-    console.log('App 컴포넌트 마운트됨, loadBlocks 호출');
     let cancelled = false;
     
     const fetchData = async () => {
       try {
         setLoading(true);
-        console.log('블록 로드 시작...');
         const data = await api.getBlocks();
-        console.log('블록 로드 성공:', data);
         if (!cancelled) {
           setBlocks(Array.isArray(data) ? data : []);
           setLoading(false);
-          console.log('로딩 상태 해제');
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error('블록 로드 실패:', error);
         if (!cancelled) {
           setBlocks([]);
           setLoading(false);
-          console.log('로딩 상태 해제 (에러)');
         }
       }
     };
@@ -79,14 +74,6 @@ function App() {
     }
   };
 
-  const handleSaveDescription = async (blockId: string, description: string) => {
-    try {
-      await handleUpdateBlock(blockId, { description });
-    } catch (error) {
-      console.error('설명 저장 실패:', error);
-      alert('설명 저장에 실패했습니다.');
-    }
-  };
 
   const handleUpdateBlock = async (blockId: string, updates: Partial<BlockType>) => {
     try {
@@ -117,28 +104,8 @@ function App() {
   };
 
   // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
-  const blocksByLevel = useMemo(() => {
-    const grouped: { [level: number]: BlockType[] } = {};
-    blocks
-      .filter((block) => block.level >= 0)
-      .forEach((block) => {
-        if (!grouped[block.level]) {
-          grouped[block.level] = [];
-        }
-        grouped[block.level].push(block);
-      });
-
-    Object.keys(grouped).forEach((level) => {
-      grouped[Number(level)].sort((a, b) => a.order - b.order);
-    });
-
-    return grouped;
-  }, [blocks]);
-
-  const maxLevel = useMemo(() => {
-    const max = Math.max(...blocks.map((b) => b.level), -1);
-    return Math.max(max, 4);
-  }, [blocks]);
+  const blocksByLevel = useMemo(() => groupBlocksByLevel(blocks), [blocks]);
+  const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
 
   // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
   const handleDragEnd = (event: DragEndEvent) => {
@@ -270,6 +237,8 @@ function App() {
           >
             <PyramidView
               blocks={blocks}
+              blocksByLevel={blocksByLevel}
+              maxLevel={maxLevel}
               onBlockUpdate={handleUpdateBlock}
               onBlockDelete={handleDeleteBlock}
               onBlockEdit={handleEditBlock}
@@ -281,15 +250,7 @@ function App() {
       {showForm && (
         <>
           <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-              zIndex: 999,
-            }}
+            style={MODAL_STYLES.overlay}
             onClick={() => {
               setShowForm(false);
               setEditingBlock(null);
@@ -305,14 +266,6 @@ function App() {
             }}
           />
         </>
-      )}
-
-      {descriptionModalBlock && (
-        <BlockDescriptionModal
-          block={descriptionModalBlock}
-          onSave={handleSaveDescription}
-          onClose={() => setDescriptionModalBlock(null)}
-        />
       )}
     </div>
   );

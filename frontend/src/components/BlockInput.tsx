@@ -37,12 +37,6 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit }) => {
     }
   };
 
-  const handleBlur = () => {
-    // 약간의 지연을 두어 클릭 이벤트가 먼저 처리되도록
-    setTimeout(() => {
-      handleSubmit();
-    }, 200);
-  };
 
   return (
     <div style={{ width: '100%' }}>
@@ -101,7 +95,12 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit }) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
+            onBlur={() => {
+              // 약간의 지연을 두어 클릭 이벤트가 먼저 처리되도록
+              setTimeout(() => {
+                handleSubmit();
+              }, 200);
+            }}
             placeholder="블록 제목을 입력하세요..."
             style={{
               width: '100%',

@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   SortableContext,
-  verticalListSortingStrategy,
   horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Block as BlockType } from '../types/block';
@@ -10,6 +9,8 @@ import { DropZone } from './DropZone';
 
 interface PyramidViewProps {
   blocks: BlockType[];
+  blocksByLevel: { [level: number]: BlockType[] };
+  maxLevel: number;
   onBlockUpdate: (blockId: string, updates: Partial<BlockType>) => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
@@ -17,35 +18,12 @@ interface PyramidViewProps {
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
   blocks,
+  blocksByLevel,
+  maxLevel,
   onBlockUpdate,
   onBlockDelete,
   onBlockEdit,
 }) => {
-  // 레벨별로 블록 그룹화 (레벨 0 이상만 피라미드에 표시)
-  const blocksByLevel = useMemo(() => {
-    const grouped: { [level: number]: BlockType[] } = {};
-    blocks
-      .filter((block) => block.level >= 0) // 레벨 0 이상만 피라미드에 표시
-      .forEach((block) => {
-        if (!grouped[block.level]) {
-          grouped[block.level] = [];
-        }
-        grouped[block.level].push(block);
-      });
-
-    // 각 레벨 내에서 order로 정렬
-    Object.keys(grouped).forEach((level) => {
-      grouped[Number(level)].sort((a, b) => a.order - b.order);
-    });
-
-    return grouped;
-  }, [blocks]);
-
-  const maxLevel = useMemo(() => {
-    const max = Math.max(...blocks.map((b) => b.level), -1);
-    // 최소 5개의 계층 보장
-    return Math.max(max, 4);
-  }, [blocks]);
 
   // 레벨별로 렌더링 (위에서 아래로, 높은 레벨부터 - 일반 피라미드: 위가 좁고 아래가 넓음)
   const levels = Array.from({ length: maxLevel + 1 }, (_, i) => maxLevel - i);
