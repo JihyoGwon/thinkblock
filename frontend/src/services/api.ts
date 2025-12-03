@@ -119,11 +119,17 @@ export const api = {
   },
 
   // AI 블록 배치
-  arrangeBlocks: async (projectId: string, blockIds: string[]): Promise<Block[]> => {
+  arrangeBlocks: async (projectId: string, blockIds: string[]): Promise<Block[] & { reasoning?: string }> => {
     const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/ai/arrange-blocks`, {
       block_ids: blockIds,
     });
-    return response.data.blocks || [];
+    console.log('🔍 API 응답:', response.data);
+    // reasoning을 포함하여 반환
+    const result = response.data.blocks || [];
+    const reasoning = response.data.reasoning || '';
+    console.log('🔍 추출한 reasoning:', reasoning ? `${reasoning.length} 문자` : '없음');
+    (result as any).reasoning = reasoning;
+    return result;
   },
 };
 

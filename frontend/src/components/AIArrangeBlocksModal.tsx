@@ -7,7 +7,7 @@ interface AIArrangeBlocksModalProps {
   projectId: string;
   blocks: Block[];
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (reasoning?: string) => void;
 }
 
 export const AIArrangeBlocksModal: React.FC<AIArrangeBlocksModalProps> = ({
@@ -44,10 +44,13 @@ export const AIArrangeBlocksModal: React.FC<AIArrangeBlocksModalProps> = ({
     setError(null);
 
     try {
-      await api.arrangeBlocks(projectId, Array.from(selectedBlockIds));
+      const result = await api.arrangeBlocks(projectId, Array.from(selectedBlockIds));
       
       setLoading(false);
-      onSuccess();
+      // API 응답에서 배치 이유 추출
+      const reasoning = (result as any).reasoning || '';
+      console.log('🔍 배치 이유 추출:', reasoning ? `${reasoning.length} 문자` : '없음');
+      onSuccess(reasoning);
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || '블록 배치에 실패했습니다.');

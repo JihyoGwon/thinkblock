@@ -12,6 +12,7 @@ import { BlockList } from './components/BlockList';
 import { CategoryManager } from './components/CategoryManager';
 import { AIGenerateBlocksModal } from './components/AIGenerateBlocksModal';
 import { AIArrangeBlocksModal } from './components/AIArrangeBlocksModal';
+import { ArrangementReasoningModal } from './components/ArrangementReasoningModal';
 import { api } from './services/api';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, COLORS } from './constants/styles';
@@ -29,6 +30,8 @@ function App() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
+  const [showArrangementReasoning, setShowArrangementReasoning] = useState(false);
+  const [arrangementReasoning, setArrangementReasoning] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -196,12 +199,22 @@ function App() {
     }
   };
 
-  const handleAIArrangeSuccess = async () => {
+  const handleAIArrangeSuccess = async (reasoning?: string) => {
     // 블록 목록 새로고침
     if (!projectId) return;
     try {
       const blocksData = await api.getBlocks(projectId);
       setBlocks(Array.isArray(blocksData) ? blocksData : []);
+      
+      // 배치 이유 저장
+      console.log('🔍 handleAIArrangeSuccess 호출됨, reasoning:', reasoning ? `${reasoning.length} 문자` : '없음');
+      if (reasoning) {
+        setArrangementReasoning(reasoning);
+        console.log('🔍 arrangementReasoning state 설정 완료');
+      } else {
+        setArrangementReasoning('');
+        console.log('🔍 arrangementReasoning을 빈 문자열로 설정');
+      }
     } catch (error) {
       console.error('블록 로드 실패:', error);
     }
@@ -603,6 +616,100 @@ function App() {
           blocks={blocks}
           onClose={() => setShowAIArrangeModal(false)}
           onSuccess={handleAIArrangeSuccess}
+        />
+      )}
+
+      {/* 왼쪽 하단 플로팅 버튼 */}
+      <button
+        onClick={() => {
+          // AI 배치 이유 보기
+          if (arrangementReasoning) {
+            setShowArrangementReasoning(true);
+          }
+        }}
+        disabled={!arrangementReasoning}
+        style={{
+          position: 'fixed',
+          bottom: '32px',
+          left: '32px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          backgroundColor: arrangementReasoning ? COLORS.primary : '#adb5bd',
+          color: 'white',
+          border: 'none',
+          cursor: arrangementReasoning ? 'pointer' : 'not-allowed',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: arrangementReasoning ? '0 4px 12px rgba(99, 102, 241, 0.4)' : '0 2px 6px rgba(0, 0, 0, 0.2)',
+          transition: 'all 0.3s ease',
+          zIndex: 100,
+          opacity: arrangementReasoning ? 1 : 0.6,
+        }}
+        onMouseEnter={(e) => {
+          if (arrangementReasoning) {
+            e.currentTarget.style.transform = 'scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.5)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (arrangementReasoning) {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
+          }
+        }}
+        title={arrangementReasoning ? 'AI 배치 이유 보기' : '배치 이유가 없습니다'}
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M14 2V8H20"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 13H8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 17H8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M10 9H9H8"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      {showArrangementReasoning && arrangementReasoning && (
+        <ArrangementReasoningModal
+          reasoning={arrangementReasoning}
+          onClose={() => setShowArrangementReasoning(false)}
         />
       )}
     </div>

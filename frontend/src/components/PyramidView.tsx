@@ -37,12 +37,9 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
     return colors[Math.min(level, colors.length - 1)];
   };
 
-  // 레벨에 따른 너비 (일반 피라미드 효과: 위는 좁게, 아래는 넓게)
-  // level이 높을수록(목표) 좁고, level이 낮을수록(기반) 넓음
+  // 레벨에 따른 너비 (모든 레벨 동일한 너비)
   const getLevelWidth = (level: number) => {
-    const baseWidth = 100; // 기반(level 0)이 100%
-    const widthReduction = level * 8; // 레벨이 높을수록 8%씩 감소
-    return Math.max(baseWidth - widthReduction, 50); // 최소 50%
+    return 100; // 모든 레벨 100% 너비
   };
 
   return (

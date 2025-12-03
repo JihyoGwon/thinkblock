@@ -238,17 +238,21 @@ def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
 
 중요: 블록들을 분석하여 각 블록의 특성에 맞는 레벨을 배정하세요. 모든 블록이 같은 레벨에 배치되면 안 됩니다.
 
-응답 형식: JSON 배열로 반환해주세요. 각 블록에 level 필드를 추가하세요.
+응답 형식: JSON 배열로 반환해주세요. 각 블록에 level과 reason 필드를 반드시 포함해야 합니다.
 [
-  {{"id": "블록1의id", "level": 0}},
-  {{"id": "블록2의id", "level": 1}},
-  {{"id": "블록3의id", "level": 2}},
-  {{"id": "블록4의id", "level": 3}},
-  {{"id": "블록5의id", "level": 4}},
+  {{"id": "블록1의id", "level": 0, "reason": "이 블록을 레벨 0에 배치한 이유를 간단히 설명 (예: 다른 모든 작업의 기반이 되는 인프라)"}},
+  {{"id": "블록2의id", "level": 1, "reason": "이 블록을 레벨 1에 배치한 이유를 간단히 설명 (예: 레벨 0 완료 후 바로 시작할 수 있는 핵심 기능)"}},
+  {{"id": "블록3의id", "level": 2, "reason": "이 블록을 레벨 2에 배치한 이유를 간단히 설명"}},
   ...
 ]
 
-레벨은 0부터 5까지의 정수여야 하며, 블록들을 다양한 레벨에 분산 배치해야 합니다."""
+각 블록의 reason 필드는 다음을 포함해야 합니다:
+- 해당 레벨에 배치한 이유
+- 다른 블록과의 의존성 관계 (있는 경우)
+- 우선순위나 위험도 고려사항 (있는 경우)
+
+레벨은 0부터 5까지의 정수여야 하며, 블록들을 다양한 레벨에 분산 배치해야 합니다.
+모든 블록에 반드시 reason 필드를 포함해주세요."""
 
         response = model.generate_content(prompt)
         
@@ -266,14 +270,46 @@ def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
         
         # JSON 파싱
         try:
-            arranged_data = json.loads(response_text)
+            response_data = json.loads(response_text)
         except json.JSONDecodeError as e:
             print(f"❌ JSON 파싱 실패: {e}")
             print(f"파싱 시도한 텍스트: {response_text[:500]}")
             raise
         
         # 디버깅: 파싱된 데이터 출력
-        print(f"🔍 파싱된 배치 데이터: {arranged_data}")
+        print(f"🔍 파싱된 배치 데이터: {response_data}")
+        
+        # 응답 형식 확인 (배열 또는 객체)
+        if isinstance(response_data, list):
+            # 배열 형식 (각 블록에 reason이 포함될 수 있음)
+            arranged_data = response_data
+            # 각 블록의 reason을 모아서 전체 reasoning 생성
+            reasons = []
+            for item in arranged_data:
+                reason_text = item.get("reason", "")
+                if reason_text:
+                    block_id = item.get("id", "")
+                    block_title = next((b.get("title", "") for b in blocks if b.get("id") == block_id), "")
+                    reasons.append(f"- {block_title} (레벨 {item.get('level', 0)}): {reason_text}")
+            reasoning = "\n\n".join(reasons) if reasons else ""
+            print(f"🔍 배열 형식에서 생성한 reasoning 길이: {len(reasoning)} 문자")
+            if reasoning:
+                print(f"🔍 reasoning 일부: {reasoning[:200]}")
+        elif isinstance(response_data, dict):
+            # 객체 형식 (arrangements와 reasoning 포함)
+            arranged_data = response_data.get("arrangements", [])
+            reasoning = response_data.get("reasoning", "")
+            # reasoning이 없으면 각 블록의 reason을 모아서 생성
+            if not reasoning:
+                reasons = []
+                for item in arranged_data:
+                    if item.get("reason"):
+                        block_id = item.get("id", "")
+                        block_title = next((b.get("title", "") for b in blocks if b.get("id") == block_id), "")
+                        reasons.append(f"- {block_title} (레벨 {item.get('level', 0)}): {item.get('reason')}")
+                reasoning = "\n\n".join(reasons) if reasons else ""
+        else:
+            raise ValueError("예상치 못한 응답 형식입니다.")
         
         # 블록 ID를 키로 하는 딕셔너리 생성
         level_map = {}
@@ -313,6 +349,12 @@ def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
         
         print(f"✅ AI 블록 배치 성공: {len(result)}개 블록 배치 완료")
         print(f"   레벨 분포: {level_distribution}")
+        print(f"   배치 이유 길이: {len(reasoning)} 문자")
+        
+        # 배치 이유를 결과에 포함 (첫 번째 블록에만 포함하여 반환)
+        if result:
+            result[0]["arrangement_reasoning"] = reasoning
+        
         return result
         
     except json.JSONDecodeError as e:

@@ -364,6 +364,14 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
         # AI로 블록 배치
         arranged_blocks = arrange_blocks(blocks_to_arrange)
         
+        # 배치 이유 추출 (첫 번째 블록에서)
+        arrangement_reasoning = ""
+        if arranged_blocks and len(arranged_blocks) > 0:
+            arrangement_reasoning = arranged_blocks[0].get("arrangement_reasoning", "")
+            print(f"🔍 추출된 배치 이유 길이: {len(arrangement_reasoning)} 문자")
+            if arrangement_reasoning:
+                print(f"🔍 배치 이유 일부: {arrangement_reasoning[:200]}")
+        
         # 블록들의 레벨 업데이트
         updated_blocks = []
         for arranged_block in arranged_blocks:
@@ -380,7 +388,8 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
             
             updated_blocks.append(updated_block)
         
-        return {"blocks": updated_blocks}
+        print(f"🔍 API 응답에 포함할 reasoning: {len(arrangement_reasoning)} 문자")
+        return {"blocks": updated_blocks, "reasoning": arrangement_reasoning}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
