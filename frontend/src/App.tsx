@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
@@ -16,6 +17,8 @@ import { CATEGORIES as DEFAULT_CATEGORIES } from './constants/categories';
 import './App.css';
 
 function App() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [blocks, setBlocks] = useState<BlockType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
@@ -25,14 +28,19 @@ function App() {
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!projectId) {
+      navigate('/projects');
+      return;
+    }
+
     let cancelled = false;
     
     const fetchData = async () => {
       try {
         setLoading(true);
         const [blocksData, categoriesData] = await Promise.all([
-          api.getBlocks(),
-          api.getCategories(),
+          api.getBlocks(projectId),
+          api.getCategories(projectId),
         ]);
         if (!cancelled) {
           setBlocks(Array.isArray(blocksData) ? blocksData : []);
@@ -56,11 +64,12 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [projectId, navigate]);
 
   const handleCreateBlock = async (blockData: Omit<BlockType, 'id'>) => {
+    if (!projectId) return;
     try {
-      const newBlock = await api.createBlock(blockData);
+      const newBlock = await api.createBlock(projectId, blockData);
       setBlocks([...blocks, newBlock]);
       setShowForm(false);
     } catch (error) {
@@ -70,12 +79,13 @@ function App() {
   };
 
   const handleQuickCreate = async (title: string) => {
+    if (!projectId) return;
     try {
       // 레벨 -1로 설정하여 아직 배치되지 않은 블록으로 표시
       // 실제로는 레벨 0이 아닌 특별한 값으로 관리하거나, 별도 필드로 관리
       // 일단 level을 -1로 설정하고, 피라미드에서는 level >= 0만 표시
       const unassignedBlocks = blocks.filter((b) => b.level < 0);
-      const newBlock = await api.createBlock({
+      const newBlock = await api.createBlock(projectId, {
         title,
         description: '',
         level: -1, // 아직 배치되지 않은 블록
@@ -90,8 +100,9 @@ function App() {
 
 
   const handleUpdateBlock = async (blockId: string, updates: Partial<BlockType>) => {
+    if (!projectId) return;
     try {
-      const updatedBlock = await api.updateBlock(blockId, updates);
+      const updatedBlock = await api.updateBlock(projectId, blockId, updates);
       setBlocks(blocks.map((b) => (b.id === blockId ? updatedBlock : b)));
       setEditingBlock(null);
       setShowForm(false);
@@ -102,10 +113,11 @@ function App() {
   };
 
   const handleDeleteBlock = async (blockId: string) => {
+    if (!projectId) return;
     if (!confirm('정말 이 블록을 삭제하시겠습니까?')) return;
 
     try {
-      await api.deleteBlock(blockId);
+      await api.deleteBlock(projectId, blockId);
       setBlocks(blocks.filter((b) => b.id !== blockId));
     } catch (error) {
       console.error('블록 삭제 실패:', error);
@@ -119,8 +131,9 @@ function App() {
   };
 
   const handleCategoriesChange = async (newCategories: string[]) => {
+    if (!projectId) return;
     try {
-      await api.updateCategories(newCategories);
+      await api.updateCategories(projectId, newCategories);
       setCategories(newCategories);
     } catch (error) {
       console.error('카테고리 업데이트 실패:', error);
@@ -133,7 +146,8 @@ function App() {
   const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
 
   // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!projectId) return;
     const { active, over } = event;
 
     if (!over || active.id === over.id) return;
@@ -213,35 +227,64 @@ function App() {
             alignItems: 'center',
           }}
         >
-          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '600', color: '#212529' }}>
-            ThinkBlock
-          </h1>
-          <button
-            onClick={() => setShowCategoryManager(true)}
-            style={{
-              padding: '8px 16px',
-              border: `1px solid ${COLORS.border.default}`,
-              borderRadius: '8px',
-              backgroundColor: COLORS.background.white,
-              color: COLORS.text.secondary,
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = COLORS.background.gray[50];
-              e.currentTarget.style.borderColor = COLORS.primary;
-              e.currentTarget.style.color = COLORS.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = COLORS.background.white;
-              e.currentTarget.style.borderColor = COLORS.border.default;
-              e.currentTarget.style.color = COLORS.text.secondary;
-            }}
-          >
-            카테고리 관리
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h1
+              onClick={() => navigate('/projects')}
+              style={{
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: '600',
+                color: '#212529',
+                cursor: 'pointer',
+              }}
+            >
+              ThinkBlock
+            </h1>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => navigate('/projects')}
+              style={{
+                padding: '8px 16px',
+                border: `1px solid ${COLORS.border.default}`,
+                borderRadius: '8px',
+                backgroundColor: COLORS.background.white,
+                color: COLORS.text.secondary,
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+              }}
+            >
+              프로젝트 목록
+            </button>
+            <button
+              onClick={() => setShowCategoryManager(true)}
+              style={{
+                padding: '8px 16px',
+                border: `1px solid ${COLORS.border.default}`,
+                borderRadius: '8px',
+                backgroundColor: COLORS.background.white,
+                color: COLORS.text.secondary,
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = COLORS.background.gray[50];
+                e.currentTarget.style.borderColor = COLORS.primary;
+                e.currentTarget.style.color = COLORS.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = COLORS.background.white;
+                e.currentTarget.style.borderColor = COLORS.border.default;
+                e.currentTarget.style.color = COLORS.text.secondary;
+              }}
+            >
+              카테고리 관리
+            </button>
+          </div>
         </div>
       </header>
 

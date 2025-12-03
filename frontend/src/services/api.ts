@@ -14,10 +14,10 @@ const apiClient = axios.create({
 
 export const api = {
   // 모든 블록 조회
-  getBlocks: async (): Promise<Block[]> => {
+  getBlocks: async (projectId: string): Promise<Block[]> => {
     try {
-      console.log('API 호출 시도:', `${API_BASE_URL}/api/blocks`);
-      const response = await apiClient.get(`${API_BASE_URL}/api/blocks`);
+      console.log('API 호출 시도:', `${API_BASE_URL}/api/projects/${projectId}/blocks`);
+      const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}/blocks`);
       console.log('API 응답:', response.data);
       return response.data?.blocks || [];
     } catch (error: any) {
@@ -35,26 +35,26 @@ export const api = {
   },
 
   // 블록 생성
-  createBlock: async (block: BlockCreate): Promise<Block> => {
-    const response = await apiClient.post(`${API_BASE_URL}/api/blocks`, block);
+  createBlock: async (projectId: string, block: BlockCreate): Promise<Block> => {
+    const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/blocks`, block);
     return response.data.block;
   },
 
   // 블록 업데이트
-  updateBlock: async (blockId: string, updates: Partial<Block>): Promise<Block> => {
-    const response = await apiClient.put(`${API_BASE_URL}/api/blocks/${blockId}`, updates);
+  updateBlock: async (projectId: string, blockId: string, updates: Partial<Block>): Promise<Block> => {
+    const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}`, updates);
     return response.data.block;
   },
 
   // 블록 삭제
-  deleteBlock: async (blockId: string): Promise<void> => {
-    await apiClient.delete(`${API_BASE_URL}/api/blocks/${blockId}`);
+  deleteBlock: async (projectId: string, blockId: string): Promise<void> => {
+    await apiClient.delete(`${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}`);
   },
 
   // 카테고리 목록 조회
-  getCategories: async (): Promise<string[]> => {
+  getCategories: async (projectId: string): Promise<string[]> => {
     try {
-      const response = await apiClient.get(`${API_BASE_URL}/api/categories`);
+      const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}/categories`);
       return response.data?.categories || [];
     } catch (error: any) {
       console.error('카테고리 조회 실패:', error);
@@ -63,9 +63,34 @@ export const api = {
   },
 
   // 카테고리 목록 업데이트
-  updateCategories: async (categories: string[]): Promise<string[]> => {
-    const response = await apiClient.put(`${API_BASE_URL}/api/categories`, { categories });
+  updateCategories: async (projectId: string, categories: string[]): Promise<string[]> => {
+    const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}/categories`, { categories });
     return response.data.categories;
+  },
+
+  // 프로젝트 관련
+  getProjects: async (): Promise<any[]> => {
+    const response = await apiClient.get(`${API_BASE_URL}/api/projects`);
+    return response.data?.projects || [];
+  },
+
+  getProject: async (projectId: string): Promise<any> => {
+    const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}`);
+    return response.data.project;
+  },
+
+  createProject: async (name: string): Promise<any> => {
+    const response = await apiClient.post(`${API_BASE_URL}/api/projects`, { name });
+    return response.data.project;
+  },
+
+  updateProject: async (projectId: string, updates: { name?: string }): Promise<any> => {
+    const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}`, updates);
+    return response.data.project;
+  },
+
+  deleteProject: async (projectId: string): Promise<void> => {
+    await apiClient.delete(`${API_BASE_URL}/api/projects/${projectId}`);
   },
 };
 

@@ -22,6 +22,11 @@ else:
         delete_block,
         get_categories,
         update_categories,
+        create_project,
+        get_project,
+        get_all_projects,
+        update_project,
+        delete_project,
     )
     print("📦 Firestore를 사용합니다")
 
@@ -66,40 +71,46 @@ class BlockUpdate(BaseModel):
 class CategoriesUpdate(BaseModel):
     categories: List[str]
 
-@app.get("/api/blocks")
-async def get_blocks():
-    """모든 블록 조회"""
+class ProjectCreate(BaseModel):
+    name: str
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+
+@app.get("/api/projects/{project_id}/blocks")
+async def get_blocks(project_id: str):
+    """프로젝트의 모든 블록 조회"""
     try:
         if USE_MEMORY_STORE:
-            blocks = store.get_all_blocks()
+            blocks = store.get_all_blocks(project_id)
         else:
-            blocks = get_all_blocks()
+            blocks = get_all_blocks(project_id)
         return {"blocks": blocks}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 조회 실패: {str(e)}")
 
-@app.post("/api/blocks")
-async def create_block_endpoint(block: BlockCreate):
+@app.post("/api/projects/{project_id}/blocks")
+async def create_block_endpoint(project_id: str, block: BlockCreate):
     """새 블록 생성"""
     try:
         block_data = block.dict()
         if USE_MEMORY_STORE:
-            created_block = store.create_block(block_data)
+            created_block = store.create_block(project_id, block_data)
         else:
-            created_block = create_block(block_data)
+            created_block = create_block(project_id, block_data)
         return {"block": created_block}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 생성 실패: {str(e)}")
 
-@app.put("/api/blocks/{block_id}")
-async def update_block_endpoint(block_id: str, block_update: BlockUpdate):
+@app.put("/api/projects/{project_id}/blocks/{block_id}")
+async def update_block_endpoint(project_id: str, block_id: str, block_update: BlockUpdate):
     """블록 업데이트"""
     try:
         updates = block_update.dict(exclude_unset=True)
         if USE_MEMORY_STORE:
-            updated_block = store.update_block(block_id, updates)
+            updated_block = store.update_block(project_id, block_id, updates)
         else:
-            updated_block = update_block(block_id, updates)
+            updated_block = update_block(project_id, block_id, updates)
         
         if updated_block is None:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
@@ -110,14 +121,14 @@ async def update_block_endpoint(block_id: str, block_update: BlockUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 업데이트 실패: {str(e)}")
 
-@app.delete("/api/blocks/{block_id}")
-async def delete_block_endpoint(block_id: str):
+@app.delete("/api/projects/{project_id}/blocks/{block_id}")
+async def delete_block_endpoint(project_id: str, block_id: str):
     """블록 삭제"""
     try:
         if USE_MEMORY_STORE:
-            success = store.delete_block(block_id)
+            success = store.delete_block(project_id, block_id)
         else:
-            success = delete_block(block_id)
+            success = delete_block(project_id, block_id)
         
         if not success:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
@@ -128,29 +139,109 @@ async def delete_block_endpoint(block_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 삭제 실패: {str(e)}")
 
-@app.get("/api/categories")
-async def get_categories_endpoint():
-    """카테고리 목록 조회"""
+@app.get("/api/projects/{project_id}/categories")
+async def get_categories_endpoint(project_id: str):
+    """프로젝트의 카테고리 목록 조회"""
     try:
         if USE_MEMORY_STORE:
-            categories = store.get_categories()
+            categories = store.get_categories(project_id)
         else:
-            categories = get_categories()
+            categories = get_categories(project_id)
         return {"categories": categories}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 조회 실패: {str(e)}")
 
-@app.put("/api/categories")
-async def update_categories_endpoint(categories_update: CategoriesUpdate):
-    """카테고리 목록 업데이트"""
+@app.put("/api/projects/{project_id}/categories")
+async def update_categories_endpoint(project_id: str, categories_update: CategoriesUpdate):
+    """프로젝트의 카테고리 목록 업데이트"""
     try:
         if USE_MEMORY_STORE:
-            updated_categories = store.update_categories(categories_update.categories)
+            updated_categories = store.update_categories(project_id, categories_update.categories)
         else:
-            updated_categories = update_categories(categories_update.categories)
+            updated_categories = update_categories(project_id, categories_update.categories)
         return {"categories": updated_categories}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 업데이트 실패: {str(e)}")
+
+# 프로젝트 관련 API
+@app.post("/api/projects")
+async def create_project_endpoint(project: ProjectCreate):
+    """새 프로젝트 생성"""
+    try:
+        if USE_MEMORY_STORE:
+            created_project = store.create_project(project.name)
+        else:
+            created_project = create_project(project.name)
+        return {"project": created_project}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 생성 실패: {str(e)}")
+
+@app.get("/api/projects")
+async def get_all_projects_endpoint():
+    """모든 프로젝트 조회"""
+    try:
+        if USE_MEMORY_STORE:
+            projects = store.get_all_projects()
+        else:
+            projects = get_all_projects()
+        return {"projects": projects}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+
+@app.get("/api/projects/{project_id}")
+async def get_project_endpoint(project_id: str):
+    """프로젝트 조회"""
+    try:
+        if USE_MEMORY_STORE:
+            project = store.get_project(project_id)
+        else:
+            project = get_project(project_id)
+        
+        if project is None:
+            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+        
+        return {"project": project}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+
+@app.put("/api/projects/{project_id}")
+async def update_project_endpoint(project_id: str, project_update: ProjectUpdate):
+    """프로젝트 업데이트"""
+    try:
+        updates = project_update.dict(exclude_unset=True)
+        if USE_MEMORY_STORE:
+            updated_project = store.update_project(project_id, updates)
+        else:
+            updated_project = update_project(project_id, updates)
+        
+        if updated_project is None:
+            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+        
+        return {"project": updated_project}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 업데이트 실패: {str(e)}")
+
+@app.delete("/api/projects/{project_id}")
+async def delete_project_endpoint(project_id: str):
+    """프로젝트 삭제"""
+    try:
+        if USE_MEMORY_STORE:
+            success = store.delete_project(project_id)
+        else:
+            success = delete_project(project_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+        
+        return {"message": "프로젝트가 삭제되었습니다", "project_id": project_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"프로젝트 삭제 실패: {str(e)}")
 
 # 정적 파일 서빙 (프로덕션 환경) - API 라우트 이후에 정의
 static_dir = os.path.join(os.path.dirname(__file__), "static")

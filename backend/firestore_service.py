@@ -18,7 +18,9 @@ def init_firestore():
     return firestore.client()
 
 db = init_firestore()
-COLLECTION_NAME = "blocks"
+PROJECTS_COLLECTION = "projects"
+BLOCKS_COLLECTION = "blocks"
+CATEGORIES_DOC_ID = "categories"
 
 class BlockModel(BaseModel):
     id: Optional[str] = None
@@ -28,9 +30,9 @@ class BlockModel(BaseModel):
     order: int
     category: Optional[str] = None  # 카테고리 필드 추가
 
-def get_all_blocks() -> List[dict]:
-    """모든 블록 조회"""
-    blocks_ref = db.collection(COLLECTION_NAME)
+def get_all_blocks(project_id: str) -> List[dict]:
+    """프로젝트의 모든 블록 조회"""
+    blocks_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION)
     docs = blocks_ref.order_by("level").order_by("order").stream()
     
     blocks = []
@@ -41,9 +43,9 @@ def get_all_blocks() -> List[dict]:
     
     return blocks
 
-def get_block(block_id: str) -> Optional[dict]:
+def get_block(project_id: str, block_id: str) -> Optional[dict]:
     """특정 블록 조회"""
-    doc_ref = db.collection(COLLECTION_NAME).document(block_id)
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document(block_id)
     doc = doc_ref.get()
     
     if doc.exists:
@@ -52,22 +54,22 @@ def get_block(block_id: str) -> Optional[dict]:
         return block
     return None
 
-def create_block(block_data: dict) -> dict:
+def create_block(project_id: str, block_data: dict) -> dict:
     """블록 생성"""
     # 같은 레벨의 블록 수를 확인하여 order 설정
     if "order" not in block_data or block_data["order"] is None:
-        level_blocks = db.collection(COLLECTION_NAME).where("level", "==", block_data["level"]).stream()
+        level_blocks = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).where("level", "==", block_data["level"]).stream()
         block_data["order"] = sum(1 for _ in level_blocks)
     
-    doc_ref = db.collection(COLLECTION_NAME).document()
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document()
     block_data["id"] = doc_ref.id
     doc_ref.set(block_data)
     
     return block_data
 
-def update_block(block_id: str, updates: dict) -> Optional[dict]:
+def update_block(project_id: str, block_id: str, updates: dict) -> Optional[dict]:
     """블록 업데이트"""
-    doc_ref = db.collection(COLLECTION_NAME).document(block_id)
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document(block_id)
     doc = doc_ref.get()
     
     if not doc.exists:
@@ -84,9 +86,9 @@ def update_block(block_id: str, updates: dict) -> Optional[dict]:
     block["id"] = updated_doc.id
     return block
 
-def delete_block(block_id: str) -> bool:
+def delete_block(project_id: str, block_id: str) -> bool:
     """블록 삭제"""
-    doc_ref = db.collection(COLLECTION_NAME).document(block_id)
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document(block_id)
     doc = doc_ref.get()
     
     if doc.exists:
@@ -95,11 +97,9 @@ def delete_block(block_id: str) -> bool:
     return False
 
 # 카테고리 관련 함수
-CATEGORIES_DOC_ID = "categories_list"
-
-def get_categories() -> List[str]:
-    """카테고리 목록 조회"""
-    doc_ref = db.collection("categories").document(CATEGORIES_DOC_ID)
+def get_categories(project_id: str) -> List[str]:
+    """프로젝트의 카테고리 목록 조회"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(CATEGORIES_DOC_ID)
     doc = doc_ref.get()
     
     if doc.exists:
@@ -107,9 +107,95 @@ def get_categories() -> List[str]:
         return data.get("categories", [])
     return []
 
-def update_categories(categories: List[str]) -> List[str]:
-    """카테고리 목록 업데이트"""
-    doc_ref = db.collection("categories").document(CATEGORIES_DOC_ID)
+def update_categories(project_id: str, categories: List[str]) -> List[str]:
+    """프로젝트의 카테고리 목록 업데이트"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(CATEGORIES_DOC_ID)
     doc_ref.set({"categories": categories})
     return categories
+
+# 프로젝트 관련 함수
+def create_project(project_name: str) -> dict:
+    """새 프로젝트 생성"""
+    import uuid
+    from datetime import datetime
+    
+    project_id = str(uuid.uuid4())
+    project_data = {
+        "id": project_id,
+        "name": project_name,
+        "createdAt": datetime.now(),
+        "updatedAt": datetime.now(),
+    }
+    
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id)
+    doc_ref.set(project_data)
+    
+    return project_data
+
+def get_project(project_id: str) -> Optional[dict]:
+    """프로젝트 조회"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id)
+    doc = doc_ref.get()
+    
+    if doc.exists:
+        project = doc.to_dict()
+        project["id"] = doc.id
+        return project
+    return None
+
+def get_all_projects() -> List[dict]:
+    """모든 프로젝트 조회"""
+    from google.cloud.firestore import Query
+    
+    projects_ref = db.collection(PROJECTS_COLLECTION)
+    docs = projects_ref.order_by("updatedAt", direction=Query.DESCENDING).stream()
+    
+    projects = []
+    for doc in docs:
+        project = doc.to_dict()
+        project["id"] = doc.id
+        projects.append(project)
+    
+    return projects
+
+def update_project(project_id: str, updates: dict) -> Optional[dict]:
+    """프로젝트 업데이트"""
+    from datetime import datetime
+    
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        return None
+    
+    updates["updatedAt"] = datetime.now()
+    doc_ref.update(updates)
+    
+    updated_doc = doc_ref.get()
+    project = updated_doc.to_dict()
+    project["id"] = updated_doc.id
+    return project
+
+def delete_project(project_id: str) -> bool:
+    """프로젝트 삭제 (블록과 카테고리도 함께 삭제)"""
+    project_ref = db.collection(PROJECTS_COLLECTION).document(project_id)
+    project_doc = project_ref.get()
+    
+    if not project_doc.exists:
+        return False
+    
+    # 모든 블록 삭제
+    blocks_ref = project_ref.collection(BLOCKS_COLLECTION)
+    for block_doc in blocks_ref.stream():
+        block_doc.reference.delete()
+    
+    # 메타데이터 삭제
+    metadata_ref = project_ref.collection("metadata")
+    for metadata_doc in metadata_ref.stream():
+        metadata_doc.reference.delete()
+    
+    # 프로젝트 문서 삭제
+    project_ref.delete()
+    
+    return True
 
