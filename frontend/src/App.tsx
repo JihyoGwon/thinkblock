@@ -557,6 +557,7 @@ function App() {
             >
               <TableView
                 blocks={blocks}
+                maxLevel={maxLevel}
                 onBlockDelete={handleDeleteBlock}
                 onBlockEdit={handleEditBlock}
               />

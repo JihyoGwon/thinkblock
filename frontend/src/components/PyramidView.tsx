@@ -21,8 +21,8 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   onBlockEdit,
 }) => {
 
-  // 레벨별로 렌더링 (위에서 아래로, 높은 레벨부터 - 일반 피라미드: 위가 좁고 아래가 넓음)
-  const levels = Array.from({ length: maxLevel + 1 }, (_, i) => maxLevel - i);
+  // 레벨별로 렌더링 (아래에서 위로, 낮은 레벨부터 - 일반 피라미드: 아래가 기반, 위가 목표)
+  const levels = Array.from({ length: maxLevel + 1 }, (_, i) => i);
 
   // 레벨에 따른 배경색 (깔끔한 그레이 톤)
   const getLevelBgColor = (level: number) => {
@@ -79,7 +79,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                 borderRadius: '16px',
                 padding: isSingleBlock ? '8px 12px' : '12px',
                 border: '1px solid',
-                borderColor: level === maxLevel && level > 0 ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
+                borderColor: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
                 transition: 'all 0.3s ease',
                 boxShadow: hasBlocks ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.03)',
                 display: 'flex',
@@ -98,15 +98,15 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                   style={{
                     fontSize: '12px',
                     fontWeight: '600',
-                    color: level === maxLevel && level > 0 ? '#6366f1' : level === 0 ? '#10b981' : '#6c757d',
+                    color: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#6c757d',
                     padding: '6px 12px',
                     borderRadius: '8px',
-                    backgroundColor: level === maxLevel && level > 0 ? '#eef2ff' : level === 0 ? '#ecfdf5' : '#f1f3f5',
+                    backgroundColor: level === maxLevel ? '#eef2ff' : level === 0 ? '#ecfdf5' : '#f1f3f5',
                     border: 'none',
                     display: 'inline-block',
                   }}
                 >
-                  {level === maxLevel && level > 0 ? '목표' : level === 0 ? '기반' : `Level ${level}`}
+                  {level === maxLevel ? '목표' : level === 0 ? '기반' : `Level ${level}`}
                 </span>
               </div>
               {hasBlocks ? (

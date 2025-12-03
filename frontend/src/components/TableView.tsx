@@ -4,19 +4,21 @@ import { COLORS } from '../constants/styles';
 
 interface TableViewProps {
   blocks: BlockType[];
+  maxLevel: number;
   onBlockEdit: (block: BlockType) => void;
   onBlockDelete: (blockId: string) => void;
 }
 
 export const TableView: React.FC<TableViewProps> = ({
   blocks,
+  maxLevel,
   onBlockEdit,
   onBlockDelete,
 }) => {
-  // 레벨별로 정렬 (높은 레벨부터)
+  // 레벨별로 정렬 (낮은 레벨부터 - 피라미드와 동일하게)
   const sortedBlocks = [...blocks].sort((a, b) => {
     if (a.level !== b.level) {
-      return b.level - a.level; // 높은 레벨이 먼저
+      return a.level - b.level; // 낮은 레벨이 먼저
     }
     return a.order - b.order;
   });
@@ -24,6 +26,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const getLevelLabel = (level: number) => {
     if (level < 0) return '미배치';
     if (level === 0) return '기반';
+    if (level === maxLevel) return '목표';
     return `Level ${level}`;
   };
 
@@ -72,6 +75,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   color: COLORS.text.secondary,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
+                  width: '120px',
                 }}
               >
                 레벨
@@ -98,6 +102,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   color: COLORS.text.secondary,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
+                  width: '150px',
                 }}
               >
                 카테고리
