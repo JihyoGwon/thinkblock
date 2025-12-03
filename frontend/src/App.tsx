@@ -79,10 +79,6 @@ function App() {
     }
   };
 
-  const handleBlockClick = (block: BlockType) => {
-    setDescriptionModalBlock(block);
-  };
-
   const handleSaveDescription = async (blockId: string, description: string) => {
     try {
       await handleUpdateBlock(blockId, { description });
@@ -257,7 +253,6 @@ function App() {
             <BlockInput onSubmit={handleQuickCreate} />
             <BlockList
               blocks={blocks}
-              onBlockClick={handleBlockClick}
               onBlockDelete={handleDeleteBlock}
               onBlockEdit={handleEditBlock}
             />
@@ -278,7 +273,6 @@ function App() {
               onBlockUpdate={handleUpdateBlock}
               onBlockDelete={handleDeleteBlock}
               onBlockEdit={handleEditBlock}
-              onBlockClick={handleBlockClick}
             />
           </div>
         </main>

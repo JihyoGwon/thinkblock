@@ -4,14 +4,12 @@ import { Block } from './Block';
 
 interface BlockListProps {
   blocks: BlockType[];
-  onBlockClick: (block: BlockType) => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
 }
 
 export const BlockList: React.FC<BlockListProps> = ({
   blocks,
-  onBlockClick,
   onBlockDelete,
   onBlockEdit,
 }) => {
@@ -59,7 +57,6 @@ export const BlockList: React.FC<BlockListProps> = ({
               block={block}
               onEdit={onBlockEdit}
               onDelete={onBlockDelete}
-              onClick={onBlockClick}
             />
           ))}
         </div>

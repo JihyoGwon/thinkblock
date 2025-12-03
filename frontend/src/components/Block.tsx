@@ -7,10 +7,9 @@ interface BlockProps {
   block: BlockType;
   onEdit: (block: BlockType) => void;
   onDelete: (blockId: string) => void;
-  onClick?: (block: BlockType) => void;
 }
 
-export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }) => {
+export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
   const {
     attributes,
     listeners,
@@ -43,53 +42,44 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }
     return colors[Math.min(level, colors.length - 1)];
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    // 버튼 클릭이 아닐 때만 클릭 이벤트 발생
-    const target = e.target as HTMLElement;
-    if (target.tagName !== 'BUTTON' && !target.closest('button')) {
-      if (onClick && !isDragging) {
-        onClick(block);
-      }
-    }
-  };
-
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
       className="block"
-      onClick={handleClick}
       style={{
         ...style,
         backgroundColor: getLevelColor(block.level),
         border: '1px solid',
         borderColor: isDragging ? '#6366f1' : '#e9ecef',
         borderRadius: '12px',
-        padding: '20px',
+        padding: '16px',
         margin: '8px',
-        cursor: isDragging ? 'grabbing' : 'pointer',
-        minWidth: '240px',
-        maxWidth: '320px',
+        cursor: isDragging ? 'grabbing' : 'grab',
+        minWidth: '320px',
+        maxWidth: '480px',
         boxShadow: isDragging 
           ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
           : '0 2px 8px rgba(0,0,0,0.04)',
         transition: 'all 0.2s ease',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div 
+          style={{ flex: 1, cursor: 'pointer' }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onEdit(block);
+          }}
+        >
+          <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
             {block.title}
           </h3>
           {block.description && (
             <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#6c757d', lineHeight: '1.5' }}>
               {block.description}
-            </p>
-          )}
-          {!block.description && (
-            <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#adb5bd', fontStyle: 'italic' }}>
-              클릭하여 설명 추가
             </p>
           )}
         </div>
@@ -110,6 +100,8 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, onClick }
             justifyContent: 'center',
             transition: 'all 0.2s',
             opacity: 0.6,
+            position: 'relative',
+            zIndex: 2,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#fff5f5';

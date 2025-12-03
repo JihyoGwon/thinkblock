@@ -12,7 +12,6 @@ interface PyramidViewProps {
   onBlockUpdate: (blockId: string, updates: Partial<BlockType>) => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
-  onBlockClick?: (block: BlockType) => void;
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
@@ -20,7 +19,6 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   onBlockUpdate,
   onBlockDelete,
   onBlockEdit,
-  onBlockClick,
 }) => {
   // 레벨별로 블록 그룹화 (레벨 0 이상만 피라미드에 표시)
   const blocksByLevel = useMemo(() => {
@@ -147,7 +145,6 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                         block={block}
                         onEdit={onBlockEdit}
                         onDelete={onBlockDelete}
-                        onClick={onBlockClick}
                       />
                     ))}
                   </DropZone>
