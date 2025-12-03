@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Block, BlockCreate } from '../types/block';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8002';
+// 프로덕션에서는 같은 도메인에서 서빙되므로 상대 경로 사용
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8002');
 
 // axios 인스턴스 생성 (타임아웃 2초)
 const apiClient = axios.create({
