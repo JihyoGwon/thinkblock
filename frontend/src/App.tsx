@@ -15,7 +15,7 @@ import { AIArrangeBlocksModal } from './components/AIArrangeBlocksModal';
 import { ArrangementReasoningModal } from './components/ArrangementReasoningModal';
 import { api } from './services/api';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
-import { MODAL_STYLES, COLORS } from './constants/styles';
+import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
 import { CATEGORIES as DEFAULT_CATEGORIES } from './constants/categories';
 import './App.css';
 
@@ -36,6 +36,7 @@ function App() {
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState('');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (!projectId) {
@@ -134,6 +135,29 @@ function App() {
     } catch (error) {
       console.error('블록 삭제 실패:', error);
       alert('블록 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleResetBlocks = async () => {
+    if (!projectId) return;
+    
+    setShowResetConfirm(true);
+  };
+
+  const confirmResetBlocks = async () => {
+    if (!projectId) return;
+    
+    try {
+      // 모든 블록 삭제
+      const deletePromises = blocks.map((block) => api.deleteBlock(projectId, block.id));
+      await Promise.all(deletePromises);
+      
+      setBlocks([]);
+      setShowResetConfirm(false);
+      setArrangementReasoning(''); // 배치 이유도 초기화
+    } catch (error) {
+      console.error('블록 초기화 실패:', error);
+      alert('블록 초기화에 실패했습니다.');
     }
   };
 
@@ -445,6 +469,30 @@ function App() {
             >
               카테고리 관리
             </button>
+            <button
+              onClick={handleResetBlocks}
+              style={{
+                padding: '8px 16px',
+                border: `1px solid ${COLORS.danger}`,
+                borderRadius: '8px',
+                backgroundColor: COLORS.background.white,
+                color: COLORS.danger,
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#fff5f5';
+                e.currentTarget.style.borderColor = COLORS.danger;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = COLORS.background.white;
+                e.currentTarget.style.borderColor = COLORS.danger;
+              }}
+            >
+              초기화
+            </button>
           </div>
         </div>
       </header>
@@ -712,6 +760,94 @@ function App() {
           reasoning={arrangementReasoning}
           onClose={() => setShowArrangementReasoning(false)}
         />
+      )}
+
+      {/* 초기화 확인 모달 */}
+      {showResetConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowResetConfirm(false)}
+        >
+          <div
+            style={{
+              backgroundColor: COLORS.background.white,
+              borderRadius: '16px',
+              padding: '24px',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+              border: `1px solid ${COLORS.border.default}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              style={{
+                margin: '0 0 16px 0',
+                fontSize: '20px',
+                fontWeight: '600',
+                color: COLORS.text.primary,
+              }}
+            >
+              전체 블록 초기화
+            </h2>
+            <p
+              style={{
+                margin: '0 0 24px 0',
+                fontSize: '14px',
+                color: COLORS.text.secondary,
+                lineHeight: '1.6',
+              }}
+            >
+              정말 모든 블록을 삭제하시겠습니까?<br />
+              이 작업은 되돌릴 수 없습니다.
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                style={{
+                  ...BUTTON_STYLES.secondary,
+                  padding: '10px 20px',
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmResetBlocks}
+                style={{
+                  ...BUTTON_STYLES.primary,
+                  padding: '10px 20px',
+                  backgroundColor: COLORS.danger,
+                  borderColor: COLORS.danger,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = COLORS.danger;
+                }}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
