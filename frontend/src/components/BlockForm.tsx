@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Block } from '../types/block';
 import { COLORS, MODAL_STYLES, BUTTON_STYLES } from '../constants/styles';
+import { CategoryDropdown } from './CategoryDropdown';
 
 interface BlockFormProps {
   block?: Block | null;
   maxLevel: number;
   onSubmit: (block: Omit<Block, 'id'>) => void;
   onCancel: () => void;
+  categories: string[];
 }
 
 export const BlockForm: React.FC<BlockFormProps> = ({
@@ -14,20 +16,24 @@ export const BlockForm: React.FC<BlockFormProps> = ({
   maxLevel,
   onSubmit,
   onCancel,
+  categories,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState(0);
+  const [category, setCategory] = useState('');
 
   useEffect(() => {
     if (block) {
       setTitle(block.title);
       setDescription(block.description);
       setLevel(block.level);
+      setCategory(block.category || '');
     } else {
       setTitle('');
       setDescription('');
       setLevel(0);
+      setCategory('');
     }
   }, [block]);
 
@@ -40,12 +46,14 @@ export const BlockForm: React.FC<BlockFormProps> = ({
       description: description.trim(),
       level,
       order: 0, // 임시값, 서버에서 계산
+      category: category || undefined,
     });
 
     // 폼 초기화
     setTitle('');
     setDescription('');
     setLevel(0);
+    setCategory('');
   };
 
   return (
@@ -145,6 +153,26 @@ export const BlockForm: React.FC<BlockFormProps> = ({
               e.target.style.backgroundColor = COLORS.background.gray[50];
               e.target.style.boxShadow = 'none';
             }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: COLORS.text.secondary,
+            }}
+          >
+            카테고리
+          </label>
+          <CategoryDropdown
+            value={category}
+            onChange={setCategory}
+            options={categories}
+            placeholder="카테고리를 선택하세요"
           />
         </div>
 

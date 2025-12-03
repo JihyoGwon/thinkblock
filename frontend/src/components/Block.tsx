@@ -65,9 +65,26 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
             onEdit(block);
           }}
         >
-          <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
-            {block.title}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
+              {block.title}
+            </h3>
+            {block.category && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#6366f1',
+                  backgroundColor: '#eef2ff',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {block.category}
+              </span>
+            )}
+          </div>
           {block.description && (
             <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#6c757d', lineHeight: '1.5' }}>
               {block.description}

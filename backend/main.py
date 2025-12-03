@@ -41,18 +41,21 @@ class Block(BaseModel):
     description: str
     level: int  # 계층 레벨 (0이 가장 아래, 숫자가 클수록 위)
     order: int  # 같은 레벨 내 순서
+    category: Optional[str] = None  # 카테고리
 
 class BlockCreate(BaseModel):
     title: str
     description: str
     level: int
     order: Optional[int] = None
+    category: Optional[str] = None
 
 class BlockUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     level: Optional[int] = None
     order: Optional[int] = None
+    category: Optional[str] = None
 
 @app.get("/")
 def read_root():

@@ -4,6 +4,7 @@ export interface Block {
   description: string;
   level: number; // 0이 가장 아래 (기반), 숫자가 클수록 위 (목표)
   order: number; // 같은 레벨 내 순서
+  category?: string; // 카테고리
 }
 
 export interface BlockCreate {
@@ -11,5 +12,6 @@ export interface BlockCreate {
   description: string;
   level: number;
   order: number;
+  category?: string;
 }
 
