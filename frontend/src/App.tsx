@@ -80,6 +80,7 @@ function App() {
       const updatedBlock = await api.updateBlock(blockId, updates);
       setBlocks(blocks.map((b) => (b.id === blockId ? updatedBlock : b)));
       setEditingBlock(null);
+      setShowForm(false);
     } catch (error) {
       console.error('블록 업데이트 실패:', error);
       alert('블록 업데이트에 실패했습니다.');

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Block } from '../types/block';
+import { COLORS, MODAL_STYLES, BUTTON_STYLES } from '../constants/styles';
 
 interface BlockFormProps {
   block?: Block | null;
@@ -50,24 +51,27 @@ export const BlockForm: React.FC<BlockFormProps> = ({
   return (
     <div
       style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'white',
-        padding: '24px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: 1000,
-        minWidth: '400px',
+        ...MODAL_STYLES.container,
+        padding: '32px',
+        minWidth: '480px',
+        maxWidth: '600px',
       }}
+      onClick={(e) => e.stopPropagation()}
     >
-      <h2 style={{ marginTop: 0 }}>
+      <h2 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: '600', color: COLORS.text.primary }}>
         {block ? '블록 수정' : '새 블록 추가'}
       </h2>
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: COLORS.text.secondary,
+            }}
+          >
             제목 *
           </label>
           <input
@@ -75,37 +79,85 @@ export const BlockForm: React.FC<BlockFormProps> = ({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
+            placeholder="블록 제목을 입력하세요..."
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
+              padding: '14px 16px',
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: '12px',
               fontSize: '14px',
+              outline: 'none',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit',
+              backgroundColor: COLORS.background.gray[50],
+              color: COLORS.text.primary,
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = COLORS.border.focus;
+              e.target.style.backgroundColor = COLORS.background.white;
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = COLORS.border.default;
+              e.target.style.backgroundColor = COLORS.background.gray[50];
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: COLORS.text.secondary,
+            }}
+          >
             설명
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="블록에 대한 설명을 입력하세요..."
             rows={4}
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
+              padding: '14px 16px',
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: '12px',
               fontSize: '14px',
               resize: 'vertical',
+              outline: 'none',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit',
+              backgroundColor: COLORS.background.gray[50],
+              color: COLORS.text.primary,
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = COLORS.border.focus;
+              e.target.style.backgroundColor = COLORS.background.white;
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = COLORS.border.default;
+              e.target.style.backgroundColor = COLORS.background.gray[50];
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: COLORS.text.secondary,
+            }}
+          >
             레벨 (0: 기반, {maxLevel}: 목표)
           </label>
           <input
@@ -116,10 +168,25 @@ export const BlockForm: React.FC<BlockFormProps> = ({
             onChange={(e) => setLevel(parseInt(e.target.value) || 0)}
             style={{
               width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
+              padding: '14px 16px',
+              border: `1px solid ${COLORS.border.default}`,
+              borderRadius: '12px',
               fontSize: '14px',
+              outline: 'none',
+              transition: 'all 0.2s',
+              fontFamily: 'inherit',
+              backgroundColor: COLORS.background.gray[50],
+              color: COLORS.text.primary,
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = COLORS.border.focus;
+              e.target.style.backgroundColor = COLORS.background.white;
+              e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = COLORS.border.default;
+              e.target.style.backgroundColor = COLORS.background.gray[50];
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>
@@ -128,25 +195,24 @@ export const BlockForm: React.FC<BlockFormProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              cursor: 'pointer',
+            style={BUTTON_STYLES.secondary}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.background.gray[50];
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.background.white;
             }}
           >
             취소
           </button>
           <button
             type="submit"
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: '#1976d2',
-              color: 'white',
-              cursor: 'pointer',
+            style={BUTTON_STYLES.primary}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.primaryHover;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = COLORS.primary;
             }}
           >
             {block ? '수정' : '추가'}
