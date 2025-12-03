@@ -26,6 +26,9 @@ function App() {
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [project, setProject] = useState<{ id: string; name: string } | null>(null);
+  const [isEditingProjectName, setIsEditingProjectName] = useState(false);
+  const [editingProjectName, setEditingProjectName] = useState('');
 
   useEffect(() => {
     if (!projectId) {
@@ -38,14 +41,16 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [blocksData, categoriesData] = await Promise.all([
+        const [blocksData, categoriesData, projectData] = await Promise.all([
           api.getBlocks(projectId),
           api.getCategories(projectId),
+          api.getProject(projectId),
         ]);
         if (!cancelled) {
           setBlocks(Array.isArray(blocksData) ? blocksData : []);
           // 카테고리가 없으면 기본 카테고리 사용
           setCategories(categoriesData.length > 0 ? categoriesData : [...DEFAULT_CATEGORIES]);
+          setProject(projectData);
           setLoading(false);
         }
       } catch (error) {
@@ -141,6 +146,33 @@ function App() {
     }
   };
 
+  const handleProjectNameEdit = () => {
+    if (!project) return;
+    setEditingProjectName(project.name);
+    setIsEditingProjectName(true);
+  };
+
+  const handleProjectNameSave = async () => {
+    if (!projectId || !editingProjectName.trim()) {
+      setIsEditingProjectName(false);
+      return;
+    }
+
+    try {
+      const updatedProject = await api.updateProject(projectId, { name: editingProjectName.trim() });
+      setProject(updatedProject);
+      setIsEditingProjectName(false);
+    } catch (error) {
+      console.error('프로젝트명 업데이트 실패:', error);
+      alert('프로젝트명 업데이트에 실패했습니다.');
+    }
+  };
+
+  const handleProjectNameCancel = () => {
+    setIsEditingProjectName(false);
+    setEditingProjectName('');
+  };
+
   // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
   const blocksByLevel = useMemo(() => groupBlocksByLevel(blocks), [blocks]);
   const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
@@ -228,18 +260,100 @@ function App() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h1
-              onClick={() => navigate('/projects')}
-              style={{
-                margin: 0,
-                fontSize: '22px',
-                fontWeight: '600',
-                color: '#212529',
-                cursor: 'pointer',
-              }}
-            >
-              ThinkBlock
-            </h1>
+            {isEditingProjectName ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={editingProjectName}
+                  onChange={(e) => setEditingProjectName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleProjectNameSave();
+                    } else if (e.key === 'Escape') {
+                      handleProjectNameCancel();
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    fontSize: '22px',
+                    fontWeight: '600',
+                    color: '#212529',
+                    border: `1px solid ${COLORS.primary}`,
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    outline: 'none',
+                    minWidth: '200px',
+                  }}
+                />
+                <button
+                  onClick={handleProjectNameSave}
+                  style={{
+                    padding: '4px 12px',
+                    border: `1px solid ${COLORS.primary}`,
+                    borderRadius: '6px',
+                    backgroundColor: COLORS.primary,
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                  }}
+                >
+                  저장
+                </button>
+                <button
+                  onClick={handleProjectNameCancel}
+                  style={{
+                    padding: '4px 12px',
+                    border: `1px solid ${COLORS.border.default}`,
+                    borderRadius: '6px',
+                    backgroundColor: COLORS.background.white,
+                    color: COLORS.text.secondary,
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                  }}
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1
+                  onClick={() => navigate('/projects')}
+                  style={{
+                    margin: 0,
+                    fontSize: '22px',
+                    fontWeight: '600',
+                    color: '#212529',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {project?.name || 'ThinkBlock'}
+                </h1>
+                {project && (
+                  <button
+                    onClick={handleProjectNameEdit}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      color: COLORS.text.muted,
+                      fontSize: '14px',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = COLORS.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = COLORS.text.muted;
+                    }}
+                    title="프로젝트명 수정"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button

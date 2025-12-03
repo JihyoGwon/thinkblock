@@ -207,18 +207,49 @@ export const ProjectSelector: React.FC = () => {
                       border: 'none',
                       cursor: 'pointer',
                       padding: '4px',
-                      color: COLORS.text.muted,
-                      fontSize: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = COLORS.primary;
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.stroke = COLORS.primary;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = COLORS.text.muted;
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.stroke = COLORS.text.muted;
                     }}
                     title="복제"
                   >
-                    📋
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{
+                        stroke: COLORS.text.muted,
+                        strokeWidth: '1.5',
+                        transition: 'stroke 0.2s',
+                      }}
+                    >
+                      <rect
+                        x="5"
+                        y="5"
+                        width="8"
+                        height="8"
+                        rx="1.5"
+                        fill="none"
+                      />
+                      <rect
+                        x="3"
+                        y="3"
+                        width="8"
+                        height="8"
+                        rx="1.5"
+                        fill="none"
+                      />
+                    </svg>
                   </button>
                   <button
                     onClick={(e) => handleDeleteProject(project.id, e)}
