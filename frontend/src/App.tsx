@@ -173,6 +173,11 @@ function App() {
     setEditingProjectName('');
   };
 
+  const handleAIClick = () => {
+    // AI 기능은 나중에 구현
+    console.log('AI 버튼 클릭');
+  };
+
   // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
   const blocksByLevel = useMemo(() => groupBlocksByLevel(blocks), [blocks]);
   const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
@@ -433,7 +438,7 @@ function App() {
                   overflow: 'hidden',
                 }}
               >
-                <BlockInput onSubmit={handleQuickCreate} />
+                        <BlockInput onSubmit={handleQuickCreate} onAIClick={handleAIClick} />
                 <BlockList
                   blocks={blocks}
                   onBlockDelete={handleDeleteBlock}
@@ -482,7 +487,7 @@ function App() {
                 overflow: 'hidden',
               }}
             >
-              <BlockInput onSubmit={handleQuickCreate} />
+                        <BlockInput onSubmit={handleQuickCreate} onAIClick={handleAIClick} />
               <BlockList
                 blocks={blocks}
                 onBlockDelete={handleDeleteBlock}
