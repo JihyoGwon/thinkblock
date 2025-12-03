@@ -8,12 +8,46 @@ import os
 def init_firestore():
     if not firebase_admin._apps:
         cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+        
+        # 환경 변수가 없으면 프로젝트 루트에서 찾기
+        if not cred_path:
+            import pathlib
+            project_root = pathlib.Path(__file__).parent.parent
+            possible_paths = [
+                project_root / "vertex-ai-thinkblock.json",
+                project_root / "firebase-credentials.json",
+            ]
+            for path in possible_paths:
+                if path.exists():
+                    cred_path = str(path)
+                    break
+        
         if cred_path and os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred)
+            try:
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+                print(f"✅ Firestore 인증 파일 사용: {cred_path}")
+            except Exception as e:
+                print(f"⚠️  인증 파일 로드 실패: {e}")
+                # 기본 인증 시도 (gcloud auth application-default login 사용)
+                try:
+                    firebase_admin.initialize_app()
+                    print("✅ 기본 인증 사용 (gcloud auth)")
+                except Exception as e2:
+                    print(f"❌ Firestore 초기화 실패: {e2}")
+                    raise
         else:
-            # 기본 인증 사용 (GCP 환경에서)
-            firebase_admin.initialize_app()
+            # 기본 인증 사용 (GCP 환경에서 또는 gcloud auth 사용)
+            try:
+                firebase_admin.initialize_app()
+                print("✅ 기본 인증 사용 (GCP 환경 또는 gcloud auth)")
+            except Exception as e:
+                print(f"❌ Firestore 초기화 실패: {e}")
+                print("💡 해결 방법:")
+                print("   1. vertex-ai-thinkblock.json 파일을 프로젝트 루트에 배치")
+                print("   2. 또는 환경 변수 FIREBASE_CREDENTIALS_PATH 설정")
+                print("   3. 또는 'gcloud auth application-default login' 실행")
+                raise
     
     return firestore.client()
 
@@ -32,16 +66,27 @@ class BlockModel(BaseModel):
 
 def get_all_blocks(project_id: str) -> List[dict]:
     """프로젝트의 모든 블록 조회"""
-    blocks_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION)
-    docs = blocks_ref.order_by("level").order_by("order").stream()
-    
-    blocks = []
-    for doc in docs:
-        block = doc.to_dict()
-        block["id"] = doc.id
-        blocks.append(block)
-    
-    return blocks
+    try:
+        blocks_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION)
+        
+        # 인덱스가 없을 수 있으므로 먼저 단순 조회 후 정렬
+        docs = blocks_ref.stream()
+        
+        blocks = []
+        for doc in docs:
+            block = doc.to_dict()
+            block["id"] = doc.id
+            blocks.append(block)
+        
+        # 메모리에서 정렬
+        blocks.sort(key=lambda x: (x.get("level", 0), x.get("order", 0)))
+        
+        print(f"✅ 블록 조회 성공: project_id={project_id}, count={len(blocks)}")
+        return blocks
+    except Exception as e:
+        print(f"❌ 블록 조회 실패: project_id={project_id}, error={e}")
+        # 에러 발생 시 빈 배열 반환
+        return []
 
 def get_block(project_id: str, block_id: str) -> Optional[dict]:
     """특정 블록 조회"""
@@ -56,16 +101,23 @@ def get_block(project_id: str, block_id: str) -> Optional[dict]:
 
 def create_block(project_id: str, block_data: dict) -> dict:
     """블록 생성"""
-    # 같은 레벨의 블록 수를 확인하여 order 설정
-    if "order" not in block_data or block_data["order"] is None:
-        level_blocks = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).where("level", "==", block_data["level"]).stream()
-        block_data["order"] = sum(1 for _ in level_blocks)
-    
-    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document()
-    block_data["id"] = doc_ref.id
-    doc_ref.set(block_data)
-    
-    return block_data
+    try:
+        # 같은 레벨의 블록 수를 확인하여 order 설정
+        if "order" not in block_data or block_data["order"] is None:
+            level_blocks = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).where("level", "==", block_data["level"]).stream()
+            block_data["order"] = sum(1 for _ in level_blocks)
+        
+        doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection(BLOCKS_COLLECTION).document()
+        block_data["id"] = doc_ref.id
+        
+        # Firestore에 저장
+        doc_ref.set(block_data)
+        print(f"✅ 블록 생성 성공: project_id={project_id}, block_id={block_data['id']}, title={block_data.get('title', '')}")
+        
+        return block_data
+    except Exception as e:
+        print(f"❌ 블록 생성 실패: project_id={project_id}, error={e}")
+        raise
 
 def update_block(project_id: str, block_id: str, updates: dict) -> Optional[dict]:
     """블록 업데이트"""

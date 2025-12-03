@@ -8,7 +8,8 @@ import os
 from dotenv import load_dotenv
 
 # 로컬 테스트를 위해 인메모리 저장소 사용 (Firestore 설정 없이도 테스트 가능)
-USE_MEMORY_STORE = os.getenv("USE_MEMORY_STORE", "true").lower() == "true"
+# 기본값을 false로 변경하여 Firestore를 기본으로 사용
+USE_MEMORY_STORE = os.getenv("USE_MEMORY_STORE", "false").lower() == "true"
 
 if USE_MEMORY_STORE:
     from memory_store import memory_store as store

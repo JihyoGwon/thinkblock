@@ -1,12 +1,14 @@
 """
 로컬 테스트용 실행 스크립트
-Firestore 설정 없이 인메모리 저장소로 실행
+환경 변수 USE_MEMORY_STORE가 설정되지 않으면 Firestore 사용 (기본값)
+USE_MEMORY_STORE=true로 설정하면 인메모리 저장소 사용
 """
 import os
 import uvicorn
 
-# 인메모리 저장소 사용하도록 설정
-os.environ["USE_MEMORY_STORE"] = "true"
+# 환경 변수가 설정되지 않았을 때만 기본값 설정 (Firestore 사용)
+if "USE_MEMORY_STORE" not in os.environ:
+    os.environ["USE_MEMORY_STORE"] = "false"
 
 if __name__ == "__main__":
     import sys
