@@ -8,19 +8,15 @@ import { Block } from './Block';
 import { DropZone } from './DropZone';
 
 interface PyramidViewProps {
-  blocks: BlockType[];
   blocksByLevel: { [level: number]: BlockType[] };
   maxLevel: number;
-  onBlockUpdate: (blockId: string, updates: Partial<BlockType>) => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
-  blocks,
   blocksByLevel,
   maxLevel,
-  onBlockUpdate,
   onBlockDelete,
   onBlockEdit,
 }) => {
@@ -74,7 +70,6 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           const levelBlocks = blocksByLevel[level] || [];
           const hasBlocks = levelBlocks.length > 0;
           const levelWidth = getLevelWidth(level);
-
           const blockCount = levelBlocks.length;
           const isSingleBlock = blockCount === 1;
 

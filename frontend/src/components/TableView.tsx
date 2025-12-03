@@ -147,7 +147,7 @@ export const TableView: React.FC<TableViewProps> = ({
                 </td>
               </tr>
             ) : (
-              sortedBlocks.map((block, index) => (
+              sortedBlocks.map((block) => (
                 <tr
                   key={block.id}
                   style={{

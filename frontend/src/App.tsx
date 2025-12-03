@@ -287,10 +287,8 @@ function App() {
                 }}
               >
                 <PyramidView
-                  blocks={blocks}
                   blocksByLevel={blocksByLevel}
                   maxLevel={maxLevel}
-                  onBlockUpdate={handleUpdateBlock}
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
                 />
