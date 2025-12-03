@@ -77,7 +77,16 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onDelete(block.id);
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
           }}
           style={{
             padding: '8px',
@@ -92,7 +101,8 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
             transition: 'all 0.2s',
             opacity: 0.6,
             position: 'relative',
-            zIndex: 2,
+            zIndex: 10,
+            pointerEvents: 'auto',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#fff5f5';

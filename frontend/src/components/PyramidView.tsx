@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Block as BlockType } from '../types/block';
 import { Block } from './Block';
@@ -141,9 +142,9 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
               {hasBlocks ? (
                 <SortableContext
                   items={levelBlocks.map((b) => b.id)}
-                  strategy={verticalListSortingStrategy}
+                  strategy={horizontalListSortingStrategy}
                 >
-                  <DropZone level={level}>
+                  <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start' }}>
                     {levelBlocks.map((block) => (
                       <Block
                         key={block.id}
@@ -152,7 +153,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                         onDelete={onBlockDelete}
                       />
                     ))}
-                  </DropZone>
+                  </div>
                 </SortableContext>
               ) : (
               <DropZone level={level}>
