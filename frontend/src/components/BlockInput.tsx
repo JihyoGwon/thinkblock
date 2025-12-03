@@ -3,10 +3,11 @@ import React, { useState, useRef, useEffect } from 'react';
 interface BlockInputProps {
   onSubmit: (title: string) => void;
   onAIClick?: () => void;
+  onAIArrangeClick?: () => void;
   projectId?: string; // 향후 사용 예정
 }
 
-export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, projectId }) => {
+export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onAIArrangeClick, projectId }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
   const [title, setTitle] = useState('');
@@ -143,32 +144,34 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, pro
                   >
                     블록 생성
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowAIMenu(false);
-                      // 블록 배치는 나중에 구현
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      color: '#212529',
-                      transition: 'background-color 0.2s',
-                      borderTop: '1px solid #e9ecef',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8f9fa';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    블록 배치
-                  </button>
+                  {onAIArrangeClick && (
+                    <button
+                      onClick={() => {
+                        setShowAIMenu(false);
+                        onAIArrangeClick();
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: '#212529',
+                        transition: 'background-color 0.2s',
+                        borderTop: '1px solid #e9ecef',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f8f9fa';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      블록 배치
+                    </button>
+                  )}
                 </div>
               )}
             </div>

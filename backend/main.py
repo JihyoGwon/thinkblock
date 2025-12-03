@@ -89,6 +89,9 @@ class AIGenerateBlocksRequest(BaseModel):
     problems: str
     additional_info: str = ""
 
+class AIArrangeBlocksRequest(BaseModel):
+    block_ids: List[str]  # 배치할 블록 ID 리스트
+
 @app.get("/api/projects/{project_id}/blocks")
 async def get_blocks(project_id: str):
     """프로젝트의 모든 블록 조회"""
@@ -334,6 +337,56 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
+
+@app.post("/api/projects/{project_id}/ai/arrange-blocks")
+async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRequest):
+    """AI를 사용하여 블록들을 적절한 레벨에 배치"""
+    try:
+        from ai_service import arrange_blocks, init_vertex_ai
+        
+        # Vertex AI 초기화
+        if not init_vertex_ai():
+            raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        
+        # 배치할 블록들 가져오기
+        if USE_MEMORY_STORE:
+            all_blocks = store.get_all_blocks(project_id)
+        else:
+            from firestore_service import get_all_blocks
+            all_blocks = get_all_blocks(project_id)
+        
+        # 요청된 블록 ID들만 필터링
+        blocks_to_arrange = [block for block in all_blocks if block.get("id") in request.block_ids]
+        
+        if not blocks_to_arrange:
+            raise HTTPException(status_code=400, detail="배치할 블록을 찾을 수 없습니다")
+        
+        # AI로 블록 배치
+        arranged_blocks = arrange_blocks(blocks_to_arrange)
+        
+        # 블록들의 레벨 업데이트
+        updated_blocks = []
+        for arranged_block in arranged_blocks:
+            block_id = arranged_block.get("id")
+            new_level = arranged_block.get("level", 0)
+            
+            # 블록 업데이트
+            updates = {"level": new_level}
+            if USE_MEMORY_STORE:
+                updated_block = store.update_block(project_id, block_id, updates)
+            else:
+                from firestore_service import update_block
+                updated_block = update_block(project_id, block_id, updates)
+            
+            updated_blocks.append(updated_block)
+        
+        return {"blocks": updated_blocks}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
 
 # 정적 파일 서빙 (프로덕션 환경) - API 라우트 이후에 정의
 static_dir = os.path.join(os.path.dirname(__file__), "static")

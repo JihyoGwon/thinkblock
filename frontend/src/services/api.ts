@@ -117,5 +117,13 @@ export const api = {
     });
     return response.data.blocks || [];
   },
+
+  // AI 블록 배치
+  arrangeBlocks: async (projectId: string, blockIds: string[]): Promise<Block[]> => {
+    const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/ai/arrange-blocks`, {
+      block_ids: blockIds,
+    });
+    return response.data.blocks || [];
+  },
 };
 

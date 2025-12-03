@@ -11,6 +11,7 @@ import { BlockInput } from './components/BlockInput';
 import { BlockList } from './components/BlockList';
 import { CategoryManager } from './components/CategoryManager';
 import { AIGenerateBlocksModal } from './components/AIGenerateBlocksModal';
+import { AIArrangeBlocksModal } from './components/AIArrangeBlocksModal';
 import { api } from './services/api';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, COLORS } from './constants/styles';
@@ -27,6 +28,7 @@ function App() {
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
+  const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -179,7 +181,22 @@ function App() {
     setShowAIGenerateModal(true);
   };
 
+  const handleAIArrangeClick = () => {
+    setShowAIArrangeModal(true);
+  };
+
   const handleAIGenerateSuccess = async () => {
+    // 블록 목록 새로고침
+    if (!projectId) return;
+    try {
+      const blocksData = await api.getBlocks(projectId);
+      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+    } catch (error) {
+      console.error('블록 로드 실패:', error);
+    }
+  };
+
+  const handleAIArrangeSuccess = async () => {
     // 블록 목록 새로고침
     if (!projectId) return;
     try {
@@ -450,7 +467,11 @@ function App() {
                   overflow: 'hidden',
                 }}
               >
-                        <BlockInput onSubmit={handleQuickCreate} onAIClick={handleAIClick} />
+                        <BlockInput 
+                          onSubmit={handleQuickCreate} 
+                          onAIClick={handleAIClick} 
+                          onAIArrangeClick={handleAIArrangeClick}
+                        />
                 <BlockList
                   blocks={blocks}
                   onBlockDelete={handleDeleteBlock}
@@ -499,7 +520,11 @@ function App() {
                 overflow: 'hidden',
               }}
             >
-                        <BlockInput onSubmit={handleQuickCreate} onAIClick={handleAIClick} />
+                        <BlockInput 
+                          onSubmit={handleQuickCreate} 
+                          onAIClick={handleAIClick} 
+                          onAIArrangeClick={handleAIArrangeClick}
+                        />
               <BlockList
                 blocks={blocks}
                 onBlockDelete={handleDeleteBlock}
@@ -569,6 +594,15 @@ function App() {
           projectId={projectId}
           onClose={() => setShowAIGenerateModal(false)}
           onSuccess={handleAIGenerateSuccess}
+        />
+      )}
+
+      {showAIArrangeModal && projectId && (
+        <AIArrangeBlocksModal
+          projectId={projectId}
+          blocks={blocks}
+          onClose={() => setShowAIArrangeModal(false)}
+          onSuccess={handleAIArrangeSuccess}
         />
       )}
     </div>
