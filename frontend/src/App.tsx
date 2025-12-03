@@ -10,6 +10,7 @@ import { BlockForm } from './components/BlockForm';
 import { BlockInput } from './components/BlockInput';
 import { BlockList } from './components/BlockList';
 import { CategoryManager } from './components/CategoryManager';
+import { AIGenerateBlocksModal } from './components/AIGenerateBlocksModal';
 import { api } from './services/api';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, COLORS } from './constants/styles';
@@ -25,6 +26,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
@@ -174,8 +176,18 @@ function App() {
   };
 
   const handleAIClick = () => {
-    // AI 기능은 나중에 구현
-    console.log('AI 버튼 클릭');
+    setShowAIGenerateModal(true);
+  };
+
+  const handleAIGenerateSuccess = async () => {
+    // 블록 목록 새로고침
+    if (!projectId) return;
+    try {
+      const blocksData = await api.getBlocks(projectId);
+      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+    } catch (error) {
+      console.error('블록 로드 실패:', error);
+    }
   };
 
   // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
@@ -428,7 +440,7 @@ function App() {
               {/* 왼쪽: 입력 영역 및 블록 목록 */}
               <div
                 style={{
-                  width: '380px',
+                  width: '520px',
                   flexShrink: 0,
                   backgroundColor: '#f8f9fa',
                   borderRight: '1px solid #e9ecef',
@@ -477,7 +489,7 @@ function App() {
             {/* 왼쪽: 입력 영역 및 블록 목록 */}
             <div
               style={{
-                width: '380px',
+                width: '520px',
                 flexShrink: 0,
                 backgroundColor: '#f8f9fa',
                 borderRight: '1px solid #e9ecef',
@@ -550,6 +562,14 @@ function App() {
             onClose={() => setShowCategoryManager(false)}
           />
         </>
+      )}
+
+      {showAIGenerateModal && projectId && (
+        <AIGenerateBlocksModal
+          projectId={projectId}
+          onClose={() => setShowAIGenerateModal(false)}
+          onSuccess={handleAIGenerateSuccess}
+        />
       )}
     </div>
   );

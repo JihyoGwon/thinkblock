@@ -4,9 +4,9 @@ import { Block, BlockCreate } from '../types/block';
 // 프로덕션에서는 같은 도메인에서 서빙되므로 상대 경로 사용
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8002');
 
-// axios 인스턴스 생성 (타임아웃 2초)
+// axios 인스턴스 생성 (타임아웃 60초 - AI 블록 생성은 시간이 걸릴 수 있음)
 const apiClient = axios.create({
-  timeout: 2000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -99,6 +99,23 @@ export const api = {
       copy_structure: copyStructure,
     });
     return response.data.project;
+  },
+
+  // AI 블록 생성
+  generateBlocks: async (
+    projectId: string,
+    projectOverview: string,
+    currentStatus: string,
+    problems: string,
+    additionalInfo: string = ''
+  ): Promise<Block[]> => {
+    const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/ai/generate-blocks`, {
+      project_overview: projectOverview,
+      current_status: currentStatus,
+      problems: problems,
+      additional_info: additionalInfo,
+    });
+    return response.data.blocks || [];
   },
 };
 

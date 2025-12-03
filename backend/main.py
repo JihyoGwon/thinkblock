@@ -83,6 +83,12 @@ class ProjectDuplicate(BaseModel):
     name: str
     copy_structure: bool = True  # True: 전체 복사, False: 블록만 복사
 
+class AIGenerateBlocksRequest(BaseModel):
+    project_overview: str
+    current_status: str
+    problems: str
+    additional_info: str = ""
+
 @app.get("/api/projects/{project_id}/blocks")
 async def get_blocks(project_id: str):
     """프로젝트의 모든 블록 조회"""
@@ -263,6 +269,71 @@ async def duplicate_project_endpoint(project_id: str, duplicate_data: ProjectDup
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"프로젝트 복제 실패: {str(e)}")
+
+@app.post("/api/projects/{project_id}/ai/generate-blocks")
+async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocksRequest):
+    """AI를 사용하여 블록 생성"""
+    try:
+        from ai_service import generate_blocks, init_vertex_ai
+        
+        # Vertex AI 초기화
+        if not init_vertex_ai():
+            raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        
+        # 기존 카테고리 가져오기
+        if USE_MEMORY_STORE:
+            existing_categories = store.get_categories(project_id)
+        else:
+            from firestore_service import get_categories
+            existing_categories = get_categories(project_id)
+        
+        # AI로 블록 생성
+        generated_blocks = generate_blocks(
+            project_overview=request.project_overview,
+            current_status=request.current_status,
+            problems=request.problems,
+            additional_info=request.additional_info,
+            existing_categories=existing_categories
+        )
+        
+        # 생성된 블록들을 저장
+        created_blocks = []
+        for block_data in generated_blocks:
+            block_create = BlockCreate(
+                title=block_data.get("title", ""),
+                description=block_data.get("description", ""),
+                level=-1,  # 기본값: 좌측 리스트에 표시
+                order=0,
+                category=block_data.get("category")
+            )
+            
+            if USE_MEMORY_STORE:
+                created_block = store.create_block(project_id, block_create.dict())
+            else:
+                from firestore_service import create_block
+                created_block = create_block(project_id, block_create.dict())
+            
+            created_blocks.append(created_block)
+        
+        # 새로 생성된 카테고리들을 프로젝트 카테고리 목록에 추가
+        new_categories = set()
+        for block in created_blocks:
+            if block.get("category"):
+                new_categories.add(block["category"])
+        
+        if new_categories:
+            updated_categories = list(set(existing_categories) | new_categories)
+            if USE_MEMORY_STORE:
+                store.update_categories(project_id, updated_categories)
+            else:
+                from firestore_service import update_categories
+                update_categories(project_id, updated_categories)
+        
+        return {"blocks": created_blocks}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
 
 # 정적 파일 서빙 (프로덕션 환경) - API 라우트 이후에 정의
 static_dir = os.path.join(os.path.dirname(__file__), "static")

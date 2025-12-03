@@ -33,6 +33,8 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
     return baseColor;
   };
 
+  const [showDelete, setShowDelete] = React.useState(false);
+
   return (
     <div
       ref={setNodeRef}
@@ -54,96 +56,101 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
           ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
           : '0 2px 8px rgba(0,0,0,0.04)',
         transition: 'all 0.2s ease',
+        position: 'relative',
       }}
+      onMouseEnter={() => setShowDelete(true)}
+      onMouseLeave={() => setShowDelete(false)}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div 
-          style={{ flex: 1, cursor: 'pointer' }}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onEdit(block);
-          }}
+      {/* 삭제 버튼 - 우측 상단 모서리 */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onDelete(block.id);
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          padding: '6px',
+          border: 'none',
+          borderRadius: '6px',
+          backgroundColor: showDelete ? '#fff5f5' : 'transparent',
+          color: '#dc3545',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s',
+          opacity: showDelete ? 1 : 0,
+          zIndex: 10,
+          pointerEvents: showDelete ? 'auto' : 'none',
+          width: '24px',
+          height: '24px',
+        }}
+        title="삭제"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600', color: '#212529', lineHeight: '1.4' }}>
-              {block.title}
-            </h3>
-            {block.category && (
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#6366f1',
-                  backgroundColor: '#eef2ff',
-                  padding: '2px 8px',
-                  borderRadius: '6px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {block.category}
-              </span>
-            )}
-          </div>
-          {block.description && (
-            <p style={{ margin: '10px 0 0 0', fontSize: '14px', color: '#6c757d', lineHeight: '1.5' }}>
-              {block.description}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onDelete(block.id);
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          style={{
-            padding: '8px',
-            border: 'none',
-            borderRadius: '8px',
-            backgroundColor: 'transparent',
-            color: '#dc3545',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s',
-            opacity: 0.6,
-            position: 'relative',
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#fff5f5';
-            e.currentTarget.style.opacity = '1';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.opacity = '0.6';
-          }}
-          title="삭제"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+          <path
+            d="M6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V7H6V19ZM19 4H15.5L14.5 3H9.5L8.5 4H5V6H19V4Z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+
+      {/* 카테고리 - 상단 */}
+      {block.category && (
+        <div style={{ marginBottom: '8px' }}>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#6366f1',
+              backgroundColor: '#eef2ff',
+              padding: '4px 10px',
+              borderRadius: '6px',
+              whiteSpace: 'nowrap',
+              display: 'inline-block',
+            }}
           >
-            <path
-              d="M6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V7H6V19ZM19 4H15.5L14.5 3H9.5L8.5 4H5V6H19V4Z"
-              fill="currentColor"
-            />
-          </svg>
-        </button>
+            {block.category}
+          </span>
+        </div>
+      )}
+
+      {/* 제목 */}
+      <div 
+        style={{ cursor: 'pointer', paddingRight: block.category ? '0' : '32px' }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onEdit(block);
+        }}
+      >
+        <h3 style={{ 
+          margin: '0', 
+          fontSize: '16px', 
+          fontWeight: '600', 
+          color: '#212529', 
+          lineHeight: '1.5',
+          wordBreak: 'break-word',
+        }}>
+          {block.title}
+        </h3>
       </div>
     </div>
   );
