@@ -94,3 +94,22 @@ def delete_block(block_id: str) -> bool:
         return True
     return False
 
+# 카테고리 관련 함수
+CATEGORIES_DOC_ID = "categories_list"
+
+def get_categories() -> List[str]:
+    """카테고리 목록 조회"""
+    doc_ref = db.collection("categories").document(CATEGORIES_DOC_ID)
+    doc = doc_ref.get()
+    
+    if doc.exists:
+        data = doc.to_dict()
+        return data.get("categories", [])
+    return []
+
+def update_categories(categories: List[str]) -> List[str]:
+    """카테고리 목록 업데이트"""
+    doc_ref = db.collection("categories").document(CATEGORIES_DOC_ID)
+    doc_ref.set({"categories": categories})
+    return categories
+

@@ -22,11 +22,7 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [categories, setCategories] = useState<string[]>(() => {
-    // 로컬스토리지에서 카테고리 불러오기
-    const saved = localStorage.getItem('thinkblock_categories');
-    return saved ? JSON.parse(saved) : [...DEFAULT_CATEGORIES];
-  });
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,15 +30,22 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await api.getBlocks();
+        const [blocksData, categoriesData] = await Promise.all([
+          api.getBlocks(),
+          api.getCategories(),
+        ]);
         if (!cancelled) {
-          setBlocks(Array.isArray(data) ? data : []);
+          setBlocks(Array.isArray(blocksData) ? blocksData : []);
+          // 카테고리가 없으면 기본 카테고리 사용
+          setCategories(categoriesData.length > 0 ? categoriesData : [...DEFAULT_CATEGORIES]);
           setLoading(false);
         }
       } catch (error) {
-        console.error('블록 로드 실패:', error);
+        console.error('데이터 로드 실패:', error);
         if (!cancelled) {
           setBlocks([]);
+          // 에러 발생 시 기본 카테고리 사용
+          setCategories([...DEFAULT_CATEGORIES]);
           setLoading(false);
         }
       }
@@ -115,9 +118,14 @@ function App() {
     setShowForm(true);
   };
 
-  const handleCategoriesChange = (newCategories: string[]) => {
-    setCategories(newCategories);
-    localStorage.setItem('thinkblock_categories', JSON.stringify(newCategories));
+  const handleCategoriesChange = async (newCategories: string[]) => {
+    try {
+      await api.updateCategories(newCategories);
+      setCategories(newCategories);
+    } catch (error) {
+      console.error('카테고리 업데이트 실패:', error);
+      alert('카테고리 업데이트에 실패했습니다.');
+    }
   };
 
   // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)

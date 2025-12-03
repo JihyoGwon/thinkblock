@@ -50,5 +50,22 @@ export const api = {
   deleteBlock: async (blockId: string): Promise<void> => {
     await apiClient.delete(`${API_BASE_URL}/api/blocks/${blockId}`);
   },
+
+  // 카테고리 목록 조회
+  getCategories: async (): Promise<string[]> => {
+    try {
+      const response = await apiClient.get(`${API_BASE_URL}/api/categories`);
+      return response.data?.categories || [];
+    } catch (error: any) {
+      console.error('카테고리 조회 실패:', error);
+      return [];
+    }
+  },
+
+  // 카테고리 목록 업데이트
+  updateCategories: async (categories: string[]): Promise<string[]> => {
+    const response = await apiClient.put(`${API_BASE_URL}/api/categories`, { categories });
+    return response.data.categories;
+  },
 };
 

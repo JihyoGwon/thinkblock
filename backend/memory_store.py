@@ -52,6 +52,15 @@ class MemoryStore:
             return True
         return False
 
+    def get_categories(self) -> List[str]:
+        """카테고리 목록 조회"""
+        return getattr(self, '_categories', [])
+    
+    def update_categories(self, categories: List[str]) -> List[str]:
+        """카테고리 목록 업데이트"""
+        self._categories = categories
+        return categories
+
 # 전역 인스턴스
 memory_store = MemoryStore()
 

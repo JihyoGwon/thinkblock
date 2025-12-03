@@ -20,6 +20,8 @@ else:
         create_block,
         update_block,
         delete_block,
+        get_categories,
+        update_categories,
     )
     print("📦 Firestore를 사용합니다")
 
@@ -60,6 +62,9 @@ class BlockUpdate(BaseModel):
     level: Optional[int] = None
     order: Optional[int] = None
     category: Optional[str] = None
+
+class CategoriesUpdate(BaseModel):
+    categories: List[str]
 
 @app.get("/api/blocks")
 async def get_blocks():
@@ -122,6 +127,30 @@ async def delete_block_endpoint(block_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 삭제 실패: {str(e)}")
+
+@app.get("/api/categories")
+async def get_categories_endpoint():
+    """카테고리 목록 조회"""
+    try:
+        if USE_MEMORY_STORE:
+            categories = store.get_categories()
+        else:
+            categories = get_categories()
+        return {"categories": categories}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"카테고리 조회 실패: {str(e)}")
+
+@app.put("/api/categories")
+async def update_categories_endpoint(categories_update: CategoriesUpdate):
+    """카테고리 목록 업데이트"""
+    try:
+        if USE_MEMORY_STORE:
+            updated_categories = store.update_categories(categories_update.categories)
+        else:
+            updated_categories = update_categories(categories_update.categories)
+        return {"categories": updated_categories}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"카테고리 업데이트 실패: {str(e)}")
 
 # 정적 파일 서빙 (프로덕션 환경) - API 라우트 이후에 정의
 static_dir = os.path.join(os.path.dirname(__file__), "static")
