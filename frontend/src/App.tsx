@@ -37,6 +37,7 @@ function App() {
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
 
   useEffect(() => {
     if (!projectId) {
@@ -539,19 +540,21 @@ function App() {
                 flexDirection: 'row',
                 height: '100%',
                 overflow: 'hidden',
+                position: 'relative',
               }}
             >
               {/* 왼쪽: 입력 영역 및 블록 목록 */}
               <div
                 style={{
-                  width: '520px',
+                  width: isLeftPanelCollapsed ? '0' : '520px',
                   flexShrink: 0,
                   backgroundColor: '#f8f9fa',
-                  borderRight: '1px solid #e9ecef',
-                  padding: '32px',
-                  display: 'flex',
+                  borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
+                  padding: isLeftPanelCollapsed ? '0' : '32px',
+                  display: isLeftPanelCollapsed ? 'none' : 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
+                  transition: 'width 0.3s ease, padding 0.3s ease, border 0.3s ease',
                 }}
               >
                         <BlockInput 
@@ -565,6 +568,48 @@ function App() {
                   onBlockEdit={handleEditBlock}
                 />
               </div>
+
+              {/* 토글 버튼 */}
+              <button
+                onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+                style={{
+                  position: 'absolute',
+                  left: isLeftPanelCollapsed ? '0' : '520px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '32px',
+                  height: '64px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e9ecef',
+                  borderLeft: isLeftPanelCollapsed ? '1px solid #e9ecef' : 'none',
+                  borderRadius: '0 8px 8px 0',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  transition: 'left 0.3s ease, border-radius 0.3s ease',
+                  zIndex: 10,
+                }}
+                title={isLeftPanelCollapsed ? '블록 목록 펼치기' : '블록 목록 접기'}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{
+                    transform: isLeftPanelCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s ease',
+                  }}
+                >
+                  <path
+                    d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12L15.41 7.41Z"
+                    fill="#495057"
+                  />
+                </svg>
+              </button>
 
               {/* 오른쪽: 피라미드 영역 */}
               <div
@@ -592,19 +637,21 @@ function App() {
               flexDirection: 'row',
               height: '100%',
               overflow: 'hidden',
+              position: 'relative',
             }}
           >
             {/* 왼쪽: 입력 영역 및 블록 목록 */}
             <div
               style={{
-                width: '520px',
+                width: isLeftPanelCollapsed ? '0' : '520px',
                 flexShrink: 0,
                 backgroundColor: '#f8f9fa',
-                borderRight: '1px solid #e9ecef',
-                padding: '32px',
-                display: 'flex',
+                borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
+                padding: isLeftPanelCollapsed ? '0' : '32px',
+                display: isLeftPanelCollapsed ? 'none' : 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
+                transition: 'width 0.3s ease, padding 0.3s ease, border 0.3s ease',
               }}
             >
                         <BlockInput 
@@ -618,6 +665,48 @@ function App() {
                 onBlockEdit={handleEditBlock}
               />
             </div>
+
+            {/* 토글 버튼 */}
+            <button
+              onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+              style={{
+                position: 'absolute',
+                left: isLeftPanelCollapsed ? '0' : '520px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '32px',
+                height: '64px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e9ecef',
+                borderLeft: isLeftPanelCollapsed ? '1px solid #e9ecef' : 'none',
+                borderRadius: isLeftPanelCollapsed ? '0 8px 8px 0' : '8px 0 0 8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                transition: 'left 0.3s ease, border-radius 0.3s ease',
+                zIndex: 10,
+              }}
+              title={isLeftPanelCollapsed ? '블록 목록 펼치기' : '블록 목록 접기'}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: isLeftPanelCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              >
+                <path
+                  d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12L15.41 7.41Z"
+                  fill="#495057"
+                />
+              </svg>
+            </button>
 
             {/* 오른쪽: 표 영역 */}
             <div

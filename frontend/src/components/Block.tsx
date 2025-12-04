@@ -2,6 +2,7 @@ import React from 'react';
 import { Block as BlockType } from '../types/block';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getCategoryColor } from '../utils/categoryColors';
 
 interface BlockProps {
   block: BlockType;
@@ -36,6 +37,9 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
   };
 
   const [showDelete, setShowDelete] = React.useState(false);
+  
+  // 카테고리 색상 가져오기
+  const categoryColor = block.category ? getCategoryColor(block.category) : null;
 
   return (
     <div
@@ -114,14 +118,14 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
       </button>
 
       {/* 카테고리 - 상단 */}
-      {block.category && (
+      {block.category && categoryColor && (
         <div style={{ marginBottom: '8px' }}>
           <span
             style={{
               fontSize: '11px',
               fontWeight: '600',
-              color: '#6366f1',
-              backgroundColor: '#eef2ff',
+              color: categoryColor.text,
+              backgroundColor: categoryColor.bg,
               padding: '4px 10px',
               borderRadius: '6px',
               whiteSpace: 'nowrap',
