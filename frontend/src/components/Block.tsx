@@ -8,9 +8,10 @@ interface BlockProps {
   block: BlockType;
   onEdit: (block: BlockType) => void;
   onDelete: (blockId: string) => void;
+  isEditMode?: boolean; // 수정 모드 여부
 }
 
-export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
+export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, isEditMode = false }) => {
   const {
     attributes,
     listeners,
@@ -18,7 +19,10 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: block.id });
+  } = useSortable({ 
+    id: block.id,
+    disabled: !isEditMode, // 수정 모드가 아니면 드래그 비활성화
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -41,11 +45,14 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
   // 카테고리 색상 가져오기
   const categoryColor = block.category ? getCategoryColor(block.category) : null;
 
+  // 수정 모드에 따라 드래그 리스너 적용
+  const dragListeners = isEditMode ? listeners : {};
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
+      {...dragListeners}
       className="block"
       style={{
         ...style,
@@ -55,7 +62,7 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
         borderRadius: '12px',
         padding: '12px',
         margin: '4px',
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         minWidth: '320px',
         maxWidth: '480px',
         boxShadow: isDragging 
@@ -65,6 +72,17 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
       }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
+      onClick={(e) => {
+        // 수정 모드가 아닐 때만 클릭으로 편집 모달 열기
+        // 수정 모드일 때는 클릭 이벤트 무시 (드래그만 가능)
+        if (!isEditMode) {
+          e.stopPropagation();
+          onEdit(block);
+        } else {
+          // 수정 모드일 때는 클릭 이벤트 차단
+          e.stopPropagation();
+        }
+      }}
     >
       {/* 삭제 버튼 - 우측 상단 모서리 */}
       <button
@@ -139,12 +157,7 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
 
       {/* 제목 */}
       <div 
-        style={{ cursor: 'pointer', paddingRight: block.category ? '0' : '32px' }}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onEdit(block);
-        }}
+        style={{ paddingRight: block.category ? '0' : '32px' }}
       >
         <h3 style={{ 
           margin: '0', 

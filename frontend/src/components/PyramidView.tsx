@@ -12,6 +12,7 @@ interface PyramidViewProps {
   maxLevel: number;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
+  isEditMode?: boolean;
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
@@ -19,6 +20,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   maxLevel,
   onBlockDelete,
   onBlockEdit,
+  isEditMode = false,
 }) => {
 
   // 레벨별로 렌더링 (아래에서 위로, 낮은 레벨부터 - 일반 피라미드: 아래가 기반, 위가 목표)
@@ -122,6 +124,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                           block={block}
                           onEdit={onBlockEdit}
                           onDelete={onBlockDelete}
+                          isEditMode={isEditMode}
                         />
                       ))}
                     </div>

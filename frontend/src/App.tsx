@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DndContext, DragEndEvent, closestCorners, CollisionDetection } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragMoveEvent, closestCorners, CollisionDetection } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
 import { PyramidView } from './components/PyramidView';
@@ -27,6 +27,8 @@ function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false); // 수정 모드 토글
+  const [hasDragged, setHasDragged] = useState(false); // 실제로 드래그했는지 추적
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
@@ -271,12 +273,38 @@ function App() {
     return collisions;
   };
 
+  // 드래그 시작 핸들러
+  const handleDragStart = () => {
+    setHasDragged(false); // 드래그 시작 시 초기화
+  };
+
+  // 드래그 이동 핸들러 - 실제로 움직였는지 확인
+  const handleDragMove = (event: DragMoveEvent) => {
+    // 실제로 움직였는지 확인 (5px 이상 이동해야 드래그로 인정)
+    const deltaX = Math.abs(event.delta.x);
+    const deltaY = Math.abs(event.delta.y);
+    if (deltaX >= 5 || deltaY >= 5) {
+      setHasDragged(true);
+    }
+  };
+
   // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
   const handleDragEnd = async (event: DragEndEvent) => {
     if (!projectId) return;
     const { active, over } = event;
 
-    if (!over || active.id === over.id) return;
+    // 실제로 드래그하지 않았으면 무시 (클릭만 한 경우)
+    if (!hasDragged) {
+      setHasDragged(false);
+      return;
+    }
+
+    if (!over || active.id === over.id) {
+      setHasDragged(false);
+      return;
+    }
+
+    setHasDragged(false);
 
     const activeBlock = blocks.find((b) => b.id === active.id);
     if (!activeBlock) return;
@@ -521,7 +549,12 @@ function App() {
         </div>
       </header>
 
-      <Tabs activeTab={activeTab} onTabChange={setActiveTab}>
+      <Tabs 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        isEditMode={isEditMode}
+        onEditModeChange={setIsEditMode}
+      >
         <main
         style={{
           height: 'calc(100vh - 80px)',
@@ -532,6 +565,8 @@ function App() {
         {activeTab === 0 ? (
           <DndContext 
             collisionDetection={customCollisionDetection}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
           >
             <div
@@ -566,6 +601,7 @@ function App() {
                   blocks={blocks}
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
+                  isEditMode={isEditMode}
                 />
               </div>
 
@@ -626,6 +662,7 @@ function App() {
                   maxLevel={maxLevel}
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
+                  isEditMode={isEditMode}
                 />
               </div>
             </div>

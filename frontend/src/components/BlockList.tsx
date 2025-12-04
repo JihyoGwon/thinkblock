@@ -6,12 +6,14 @@ interface BlockListProps {
   blocks: BlockType[];
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
+  isEditMode?: boolean;
 }
 
 export const BlockList: React.FC<BlockListProps> = ({
   blocks,
   onBlockDelete,
   onBlockEdit,
+  isEditMode = false,
 }) => {
   // 레벨이 0 미만인 블록들만 표시 (아직 피라미드에 배치되지 않은 블록)
   const unassignedBlocks = blocks.filter((block) => block.level < 0);
@@ -57,6 +59,7 @@ export const BlockList: React.FC<BlockListProps> = ({
               block={block}
               onEdit={onBlockEdit}
               onDelete={onBlockDelete}
+              isEditMode={isEditMode}
             />
           ))}
         </div>
