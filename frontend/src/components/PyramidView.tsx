@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -6,6 +6,7 @@ import {
 import { Block as BlockType } from '../types/block';
 import { Block } from './Block';
 import { DropZone } from './DropZone';
+import { LEVEL_BG_COLORS } from '../constants/block';
 
 interface PyramidViewProps {
   blocksByLevel: { [level: number]: BlockType[] };
@@ -26,23 +27,13 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   // 레벨별로 렌더링 (아래에서 위로, 낮은 레벨부터 - 일반 피라미드: 아래가 기반, 위가 목표)
   const levels = Array.from({ length: maxLevel + 1 }, (_, i) => i);
 
-  // 레벨에 따른 배경색 (깔끔한 그레이 톤)
-  const getLevelBgColor = (level: number) => {
-    const colors = [
-      '#ffffff', // level 0 - 가장 밝음 (기반)
-      '#f8f9fa',
-      '#f1f3f5',
-      '#e9ecef',
-      '#dee2e6',
-      '#ced4da', // level 5
-    ];
-    return colors[Math.min(level, colors.length - 1)];
-  };
+  // 레벨에 따른 배경색 - useCallback으로 최적화
+  const getLevelBgColor = useCallback((level: number) => {
+    return LEVEL_BG_COLORS[Math.min(level, LEVEL_BG_COLORS.length - 1)];
+  }, []);
 
-  // 레벨에 따른 너비 (모든 레벨 동일한 너비)
-  const getLevelWidth = (level: number) => {
-    return 100; // 모든 레벨 100% 너비
-  };
+  // 레벨에 따른 너비 - 모든 레벨 동일한 너비
+  const getLevelWidth = useCallback(() => 100, []);
 
   return (
     <div

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Block as BlockType } from '../types/block';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getCategoryColor } from '../utils/categoryColors';
+import { LEVEL_BLOCK_COLORS, BLOCK_STYLES } from '../constants/block';
 
 interface BlockProps {
   block: BlockType;
@@ -32,13 +33,10 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, isEditMod
     zIndex: isDragging ? 9999 : 'auto', // 드래그 중일 때 매우 높은 z-index
   };
 
-  // 레벨에 따른 색상 (밝은 회색+반투명)
-  const getLevelColor = (level: number) => {
-    // 밝은 회색 배경에 반투명 효과 적용
-    // 레벨이 높을수록(목표) 약간 더 어둡게
-    const baseColor = level >= 5 ? 'rgba(240, 240, 240, 0.95)' : 'rgba(250, 250, 250, 0.95)';
-    return baseColor;
-  };
+  // 레벨에 따른 색상 (밝은 회색+반투명) - useMemo로 최적화
+  const levelColor = useMemo(() => {
+    return block.level >= 5 ? LEVEL_BLOCK_COLORS.HIGH : LEVEL_BLOCK_COLORS.LOW;
+  }, [block.level]);
 
   const [showDelete, setShowDelete] = React.useState(false);
   
@@ -56,16 +54,16 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, isEditMod
       className="block"
       style={{
         ...style,
-        backgroundColor: getLevelColor(block.level),
+        backgroundColor: levelColor,
         border: '1px solid',
         borderColor: isDragging ? '#6366f1' : '#e9ecef',
-        borderRadius: '12px',
-        padding: '12px',
-        margin: '4px 4px 4px 0', // 왼쪽 마진 제거
+        borderRadius: `${BLOCK_STYLES.BORDER_RADIUS}px`,
+        padding: `${BLOCK_STYLES.PADDING}px`,
+        margin: `${BLOCK_STYLES.MARGIN}px ${BLOCK_STYLES.MARGIN}px ${BLOCK_STYLES.MARGIN}px 0`, // 왼쪽 마진 제거
         cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         width: '100%', // 부모 컨테이너의 너비에 맞춤
-        minWidth: '240px', // 320px * 0.75
-        maxWidth: '360px', // 480px * 0.75
+        minWidth: `${BLOCK_STYLES.MIN_WIDTH}px`,
+        maxWidth: `${BLOCK_STYLES.MAX_WIDTH}px`,
         boxSizing: 'border-box', // padding과 border 포함한 너비 계산
         flexShrink: 0, // flex 컨테이너에서 축소 방지
         boxShadow: isDragging 
@@ -75,17 +73,13 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, isEditMod
       }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
-      onClick={(e) => {
-        // 수정 모드가 아닐 때만 클릭으로 편집 모달 열기
-        // 수정 모드일 때는 클릭 이벤트 무시 (드래그만 가능)
-        if (!isEditMode) {
+      {...(!isEditMode && {
+        onClick: (e) => {
+          // 보기 모드일 때만 클릭으로 편집 모달 열기
           e.stopPropagation();
           onEdit(block);
-        } else {
-          // 수정 모드일 때는 클릭 이벤트 차단
-          e.stopPropagation();
         }
-      }}
+      })}
     >
       {/* 삭제 버튼 - 우측 상단 모서리 */}
       <button

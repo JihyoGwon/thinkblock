@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DndContext, DragEndEvent, DragMoveEvent, closestCorners, CollisionDetection } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
+import { handleError, showConfirm } from './utils/errorHandler';
 import { PyramidView } from './components/PyramidView';
 import { TableView } from './components/TableView';
 import { Tabs } from './components/Tabs';
@@ -17,6 +18,7 @@ import { api } from './services/api';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
 import { CATEGORIES as DEFAULT_CATEGORIES } from './constants/categories';
+import { DRAG_THRESHOLD } from './constants/block';
 import './App.css';
 
 function App() {
@@ -133,18 +135,17 @@ function App() {
     }
   };
 
-  const handleDeleteBlock = async (blockId: string) => {
+  const handleDeleteBlock = useCallback(async (blockId: string) => {
     if (!projectId) return;
-    if (!confirm('정말 이 블록을 삭제하시겠습니까?')) return;
+    if (!showConfirm('정말 이 블록을 삭제하시겠습니까?')) return;
 
     try {
       await api.deleteBlock(projectId, blockId);
-      setBlocks(blocks.filter((b) => b.id !== blockId));
+      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
     } catch (error) {
-      console.error('블록 삭제 실패:', error);
-      alert('블록 삭제에 실패했습니다.');
+      handleError(error, '블록 삭제에 실패했습니다.');
     }
-  };
+  }, [projectId]);
 
   const handleResetBlocks = async () => {
     if (!projectId) return;
@@ -169,10 +170,10 @@ function App() {
     }
   };
 
-  const handleEditBlock = (block: BlockType) => {
+  const handleEditBlock = useCallback((block: BlockType) => {
     setEditingBlock(block);
     setShowForm(true);
-  };
+  }, []);
 
   const handleCategoriesChange = async (newCategories: string[]) => {
     if (!projectId) return;
@@ -281,10 +282,10 @@ function App() {
 
   // 드래그 이동 핸들러 - 실제로 움직였는지 확인
   const handleDragMove = (event: DragMoveEvent) => {
-    // 실제로 움직였는지 확인 (5px 이상 이동해야 드래그로 인정)
+    // 실제로 움직였는지 확인 (DRAG_THRESHOLD 이상 이동해야 드래그로 인정)
     const deltaX = Math.abs(event.delta.x);
     const deltaY = Math.abs(event.delta.y);
-    if (deltaX >= 5 || deltaY >= 5) {
+    if (deltaX >= DRAG_THRESHOLD || deltaY >= DRAG_THRESHOLD) {
       setHasDragged(true);
     }
   };
