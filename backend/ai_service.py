@@ -100,7 +100,7 @@ def generate_blocks(
         if existing_categories:
             categories_context = f"\n\n기존 카테고리 목록: {', '.join(existing_categories)}\n위 카테고리 중 적절한 것을 사용하거나, 필요시 새로운 카테고리를 체계적으로 생성할 수 있습니다."
         
-        prompt = f"""당신은 서비스 설계자입니다. 사용자가 제공한 정보를 바탕으로 프로젝트를 위한 블록들을 생성해주세요.
+        prompt = f"""당신은 서비스 설계자입니다. 사용자가 제공한 정보를 바탕으로 프로젝트를 위한 블록들을 체계적으로 생성해주세요.
 
 프로젝트 개요:
 {project_overview}
@@ -117,7 +117,43 @@ def generate_blocks(
 기존 카테고리:
 {categories_context}
 
-요구사항:
+## 블록 생성 전 사고 과정 (thinking_process)
+
+블록을 생성하기 전에 다음 사고 과정을 거쳐 체계적으로 분석하세요:
+
+1. **프로젝트 핵심 분석**:
+   - 이 프로젝트의 핵심 목표와 가치는 무엇인가?
+   - 사용자가 언급한 문제점/병목지점을 해결하기 위해 필요한 핵심 요소는 무엇인가?
+   - 현재 진행 상황을 고려할 때, 가장 시급하게 다뤄야 할 영역은 무엇인가?
+
+2. **카테고리 체계 설계**:
+   - 프로젝트 특성에 맞는 카테고리 구조는 무엇인가?
+   - 기존 카테고리를 활용할 것인가, 아니면 새로운 카테고리 체계를 설계할 것인가?
+   - 각 카테고리의 목적과 범위는 무엇인가?
+   - 카테고리 간의 관계와 위계는 어떻게 구성할 것인가?
+
+3. **블록 범위 및 우선순위 결정**:
+   - 프로젝트를 성공적으로 완성하기 위해 필요한 블록 영역은 무엇인가?
+   - 각 영역별로 몇 개의 블록이 필요한가? (예: 인프라 5개, 핵심 기능 8개, UI/UX 4개 등)
+   - 어떤 블록들이 가장 우선순위가 높은가?
+   - 놓치기 쉬운 중요한 블록은 무엇인가?
+
+4. **블록 생성 계획**:
+   - 각 카테고리별로 생성할 블록의 개수와 목록을 계획하세요.
+   - 블록들이 서로 중복되지 않고, 프로젝트의 모든 측면을 커버하는지 확인하세요.
+   - 각 블록이 구체적이고 실행 가능한 작업 단위가 되도록 계획하세요.
+
+5. **서비스 설계자 관점의 검토**:
+   - 현재 계획에서 놓치고 있는 중요한 블록이 있는가?
+   - 프로젝트의 안정성과 확장성을 고려한 블록들이 포함되어 있는가?
+   - 사용자가 언급한 문제점을 해결하기 위한 블록들이 충분한가?
+
+6. **최종 블록 생성**:
+   - 위의 분석과 계획을 바탕으로 구체적인 블록들을 생성하세요.
+   - 각 블록의 제목, 설명, 카테고리를 명확하게 작성하세요.
+
+## 요구사항
+
 1. 최소 20개 이상의 블록을 생성해야 합니다. (최대 50개)
 2. 각 블록은 다음 형식의 JSON으로 제공해주세요:
    {{
@@ -126,24 +162,48 @@ def generate_blocks(
      "category": "카테고리명"
    }}
 
-3. 카테고리는 프로젝트 특성에 맞게 편집해주세요.
-- 예시1: UI/UX, 기능, 데이터, 보안, 운영, 마케팅, 판매, 고객 서비스, 기타
-- 예시2: 프롬프팅, 아키텍처, 레퍼런스, 인프라
+3. 카테고리는 프로젝트 특성에 맞게 체계적으로 구성해야 합니다.
+   - 예시1: UI/UX, 기능, 데이터, 보안, 운영, 마케팅, 판매, 고객 서비스, 기타
+   - 예시2: 프롬프팅, 아키텍처, 레퍼런스, 인프라
+   - 기존 카테고리가 있으면 적절히 활용하되, 필요시 새로운 카테고리를 추가할 수 있습니다.
 
 4. 블록들은 프로젝트의 핵심 요소들을 포함해야 합니다.
 5. 각 블록은 독립적으로 이해할 수 있어야 하며, 설명은 구체적이어야 합니다.
+6. 블록들은 다양한 영역을 골고루 커버해야 합니다 (인프라, 기능, UI, 보안, 운영 등).
 
-응답 형식: JSON 배열로 반환해주세요.
-[
-  {{"title": "...", "description": "...", "category": "..."}},
-  {{"title": "...", "description": "...", "category": "..."}},
-  ...
-]"""
+## 응답 형식
+
+다음 JSON 형식으로 응답해주세요:
+
+{{
+  "thinking_process": {{
+    "project_analysis": "프로젝트 핵심 목표와 가치, 시급한 영역 분석",
+    "category_design": "카테고리 체계 설계 및 각 카테고리의 목적과 범위",
+    "block_scope": "필요한 블록 영역과 우선순위, 각 영역별 필요 블록 수",
+    "generation_plan": "각 카테고리별 생성할 블록의 개수와 목록 계획",
+    "designer_review": "서비스 설계자 관점의 검토 및 추가 제안",
+    "final_notes": "최종 블록 생성에 대한 요약 및 특이사항"
+  }},
+  "blocks": [
+    {{"title": "블록 제목", "description": "블록 설명", "category": "카테고리명"}},
+    {{"title": "블록 제목", "description": "블록 설명", "category": "카테고리명"}},
+    ...
+  ]
+}}
+
+중요 사항:
+- thinking_process의 각 항목을 상세하고 논리적으로 작성하세요.
+- blocks 배열에는 최소 20개 이상의 블록이 포함되어야 합니다.
+- 각 블록의 description은 구체적이고 실행 가능해야 합니다.
+- 카테고리는 일관성 있게 사용하고, 프로젝트 특성에 맞게 구성하세요."""
 
         response = model.generate_content(prompt)
         
         # 응답 파싱
         response_text = response.text.strip()
+        
+        # 디버깅: 원본 응답 출력
+        print(f"🔍 AI 원본 응답:\n{response_text[:1000]}")
         
         # JSON 추출 (마크다운 코드 블록 제거)
         if "```json" in response_text:
@@ -152,14 +212,56 @@ def generate_blocks(
             response_text = response_text.split("```")[1].split("```")[0].strip()
         
         # JSON 파싱
-        blocks_data = json.loads(response_text)
+        try:
+            response_data = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON 파싱 실패: {e}")
+            print(f"파싱 시도한 텍스트: {response_text[:500]}")
+            raise
         
-        # 최소 5개 보장
+        # 디버깅: 파싱된 데이터 출력
+        print(f"🔍 파싱된 생성 데이터 타입: {type(response_data)}")
+        
+        # 응답 형식 확인 (배열 또는 객체)
+        if isinstance(response_data, list):
+            # 배열 형식 (레거시 호환성)
+            blocks_data = response_data
+            print(f"🔍 레거시 배열 형식 감지: {len(blocks_data)}개 블록")
+        elif isinstance(response_data, dict):
+            # 객체 형식 (thinking_process와 blocks 포함)
+            blocks_data = response_data.get("blocks", [])
+            thinking_process = response_data.get("thinking_process", {})
+            
+            if thinking_process:
+                print(f"🔍 thinking_process 포함됨")
+                # thinking_process 내용 출력 (디버깅용)
+                if thinking_process.get("project_analysis"):
+                    print(f"   프로젝트 분석: {thinking_process.get('project_analysis')[:100]}...")
+                if thinking_process.get("category_design"):
+                    print(f"   카테고리 설계: {thinking_process.get('category_design')[:100]}...")
+        else:
+            raise ValueError("예상치 못한 응답 형식입니다.")
+        
+        # 최소 20개 보장
         if len(blocks_data) < 20:
             print(f"⚠️  생성된 블록이 20개 미만입니다 ({len(blocks_data)}개). 추가 생성이 필요할 수 있습니다.")
         
+        # thinking_process에서 project_analysis 추출
+        project_analysis = None
+        if isinstance(response_data, dict):
+            thinking_process = response_data.get("thinking_process", {})
+            if thinking_process:
+                project_analysis = thinking_process.get("project_analysis")
+        
         print(f"✅ AI 블록 생성 성공: {len(blocks_data)}개")
-        return blocks_data
+        if project_analysis:
+            print(f"✅ 프로젝트 분석 추출 완료: {len(project_analysis)} 문자")
+        
+        # blocks와 project_analysis를 함께 반환
+        return {
+            "blocks": blocks_data,
+            "project_analysis": project_analysis
+        }
         
     except json.JSONDecodeError as e:
         print(f"❌ JSON 파싱 실패: {e}")
@@ -169,12 +271,22 @@ def generate_blocks(
         print(f"❌ AI 블록 생성 실패: {e}")
         raise
 
-def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
+def arrange_blocks(
+    blocks: List[Dict],
+    project_overview: Optional[str] = None,
+    current_status: Optional[str] = None,
+    problems: Optional[str] = None,
+    additional_info: Optional[str] = None
+) -> List[Dict]:
     """
     AI를 사용하여 블록들을 적절한 레벨에 배치
     
     Args:
         blocks: 배치할 블록 리스트 (각 블록은 id, title, description, category 포함)
+        project_overview: 프로젝트 개요 (선택사항)
+        current_status: 현재 진행 상황 (선택사항)
+        problems: 문제점/병목지점 (선택사항)
+        additional_info: 기타 참고 사항 (선택사항)
     
     Returns:
         레벨이 배정된 블록 리스트 (각 블록에 level 필드 추가)
@@ -199,8 +311,39 @@ def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
         block_ids = [block.get('id', '') for block in blocks]
         print(f"🔍 배치할 블록 ID 목록: {block_ids}")
         
+        # 프로젝트 정보 구성 (project_overview가 project_analysis인 경우와 일반 프로젝트 정보인 경우 구분)
+        project_context = ""
+        if project_overview:
+            # project_overview가 project_analysis인 경우 (generate_blocks에서 생성된 것)
+            # project_analysis는 보통 "핵심 목표", "가치", "시급한 영역" 등의 키워드를 포함
+            if len(project_overview) > 200 or "핵심 목표" in project_overview or "가치" in project_overview or "시급한 영역" in project_overview:
+                project_context = "\n\n## 프로젝트 분석 (AI 생성)\n"
+                project_context += f"{project_overview}\n"
+                project_context += "\n위 프로젝트 분석을 바탕으로 블록 배치를 진행하세요."
+            else:
+                # 일반 프로젝트 정보인 경우
+                project_context = "\n\n## 프로젝트 정보\n"
+                project_context += f"프로젝트 개요:\n{project_overview}\n\n"
+                if current_status:
+                    project_context += f"현재 진행 상황:\n{current_status}\n\n"
+                if problems:
+                    project_context += f"문제점/병목지점:\n{problems}\n\n"
+                if additional_info:
+                    project_context += f"기타 참고 사항:\n{additional_info}\n"
+                project_context += "\n위 프로젝트 정보를 참고하여 블록 배치를 진행하세요."
+        elif current_status or problems or additional_info:
+            # project_overview는 없지만 다른 정보는 있는 경우
+            project_context = "\n\n## 프로젝트 정보\n"
+            if current_status:
+                project_context += f"현재 진행 상황:\n{current_status}\n\n"
+            if problems:
+                project_context += f"문제점/병목지점:\n{problems}\n\n"
+            if additional_info:
+                project_context += f"기타 참고 사항:\n{additional_info}\n"
+            project_context += "\n위 프로젝트 정보를 참고하여 블록 배치를 진행하세요."
+        
         prompt = f"""당신은 프로젝트 오너이자 제품 설계자입니다. 주어진 블록들을 체계적으로 분석하여 적절한 레벨(0-5)에 배치해주세요.
-
+{project_context}
 블록 목록:
 {blocks_text}
 
@@ -233,27 +376,38 @@ def arrange_blocks(blocks: List[Dict]) -> List[Dict]:
 
 블록 배치 전에 다음 사고 과정을 거쳐 체계적으로 분석하세요:
 
-1. **레벨 5 (목표) 분석**: 
+1. **프로젝트 분석** (프로젝트 정보가 제공된 경우):
+   - 프로젝트의 핵심 목표와 가치는 무엇인가?
+   - 현재 진행 상황을 고려할 때, 어떤 블록들이 우선적으로 완료되어야 하는가?
+   - 문제점/병목지점을 해결하기 위해 어떤 블록들이 먼저 배치되어야 하는가?
+   - 프로젝트의 전체적인 맥락을 고려하여 블록 배치의 방향성을 설정하세요.
+
+2. **레벨 5 (목표) 분석**: 
    - 원활한 프로젝트 진행과 안정적인 구축을 위해 레벨 5에 배정할 블록은 무엇인가?
    - 최종 목표로 설정할 수 있는 블록들을 식별하고 그 이유를 설명하세요.
+   - 프로젝트 정보가 있다면, 프로젝트의 최종 목표와 일치하는 블록을 레벨 5에 배치하세요.
 
-2. **레벨별 목표 설정**:
+3. **레벨별 목표 설정**:
    - 각 레벨(0-4)의 목표는 무엇인가?
    - 각 레벨에서 달성해야 할 핵심 가치와 목적을 명확히 정의하세요.
+   - 프로젝트 정보를 바탕으로 각 레벨이 프로젝트의 어떤 단계를 나타내는지 설명하세요.
 
-3. **의존성 및 우선순위 분석**:
+4. **의존성 및 우선순위 분석**:
    - 블록 간 의존성 관계를 분석하세요.
    - 어떤 블록이 다른 블록의 전제 조건인가?
    - 위험도가 높아 조기에 검증이 필요한 블록은 무엇인가?
+   - 프로젝트의 문제점/병목지점을 해결하기 위해 어떤 블록들이 먼저 완료되어야 하는가?
 
-4. **서비스 설계자 관점의 조언**:
+5. **서비스 설계자 관점의 조언**:
    - 현재 블록 구성에서 놓치고 있는 것이 존재하는가?
    - 프로젝트의 안정성과 성공 가능성을 높이기 위한 조언은 무엇인가?
    - 잠재적 리스크나 개선점이 있는가?
+   - 프로젝트 정보를 바탕으로 추가로 필요한 블록이나 고려사항이 있는가?
 
-5. **최종 배치 결정**:
+6. **최종 배치 결정**:
    - 위의 분석을 바탕으로 각 블록을 적절한 레벨에 배치하세요.
    - 각 배치 결정의 이유를 명확히 설명하세요.
+   - 프로젝트 정보가 있다면, 프로젝트의 맥락과 일치하도록 배치하세요.
 
 ## 응답 형식
 

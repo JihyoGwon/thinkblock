@@ -291,13 +291,32 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
             existing_categories = get_categories(project_id)
         
         # AI로 블록 생성
-        generated_blocks = generate_blocks(
+        generate_result = generate_blocks(
             project_overview=request.project_overview,
             current_status=request.current_status,
             problems=request.problems,
             additional_info=request.additional_info,
             existing_categories=existing_categories
         )
+        
+        # 결과에서 blocks와 project_analysis 추출
+        if isinstance(generate_result, dict):
+            generated_blocks = generate_result.get("blocks", [])
+            project_analysis = generate_result.get("project_analysis")
+        else:
+            # 레거시 호환성 (리스트로 반환된 경우)
+            generated_blocks = generate_result
+            project_analysis = None
+        
+        # project_analysis를 프로젝트에 저장
+        if project_analysis:
+            project_updates = {"project_analysis": project_analysis}
+            if USE_MEMORY_STORE:
+                store.update_project(project_id, project_updates)
+            else:
+                from firestore_service import update_project
+                update_project(project_id, project_updates)
+            print(f"✅ 프로젝트 분석 저장 완료: {len(project_analysis)} 문자")
         
         # 생성된 블록들을 저장
         created_blocks = []
@@ -361,8 +380,26 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
         if not blocks_to_arrange:
             raise HTTPException(status_code=400, detail="배치할 블록을 찾을 수 없습니다")
         
-        # AI로 블록 배치
-        arranged_blocks = arrange_blocks(blocks_to_arrange)
+        # 프로젝트에서 저장된 project_analysis 가져오기
+        project_analysis = None
+        if USE_MEMORY_STORE:
+            project = store.get_project(project_id)
+            if project:
+                project_analysis = project.get("project_analysis")
+        else:
+            from firestore_service import get_project
+            project = get_project(project_id)
+            if project:
+                project_analysis = project.get("project_analysis")
+        
+        # AI로 블록 배치 (저장된 project_analysis 사용)
+        arranged_blocks = arrange_blocks(
+            blocks_to_arrange,
+            project_overview=project_analysis,  # generate_blocks에서 생성된 project_analysis 사용
+            current_status=None,
+            problems=None,
+            additional_info=None
+        )
         
         # 배치 이유 추출 (첫 번째 블록에서)
         arrangement_reasoning = ""
