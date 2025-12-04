@@ -1,6 +1,7 @@
 import React from 'react';
 import { Block as BlockType } from '../types/block';
 import { COLORS } from '../constants/styles';
+import { getCategoryColor } from '../utils/categoryColors';
 
 interface TableViewProps {
   blocks: BlockType[];
@@ -194,21 +195,24 @@ export const TableView: React.FC<TableViewProps> = ({
                       fontSize: '14px',
                     }}
                   >
-                    {block.category ? (
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          color: COLORS.primary,
-                          backgroundColor: '#eef2ff',
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          display: 'inline-block',
-                        }}
-                      >
-                        {block.category}
-                      </span>
-                    ) : (
+                    {block.category ? (() => {
+                      const categoryColor = getCategoryColor(block.category);
+                      return (
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: categoryColor.text,
+                            backgroundColor: categoryColor.bg,
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            display: 'inline-block',
+                          }}
+                        >
+                          {block.category}
+                        </span>
+                      );
+                    })() : (
                       <span style={{ color: COLORS.text.muted, fontStyle: 'italic' }}>
                         없음
                       </span>
