@@ -186,10 +186,12 @@ backend/
 #### Project
 ```python
 {
-    "id": str,              # 프로젝트 ID
-    "name": str,            # 프로젝트 이름
-    "createdAt": timestamp, # 생성 시간
-    "updatedAt": timestamp  # 수정 시간
+    "id": str,                      # 프로젝트 ID
+    "name": str,                    # 프로젝트 이름
+    "createdAt": timestamp,         # 생성 시간
+    "updatedAt": timestamp,         # 수정 시간
+    "project_analysis": str,        # AI 생성 프로젝트 분석 (선택사항)
+    "arrangement_reasoning": str    # AI 배치 이유 (선택사항)
 }
 ```
 
@@ -212,34 +214,51 @@ projects/
     - name: string
     - createdAt: timestamp
     - updatedAt: timestamp
+    - project_analysis: string (optional)      # AI 생성 프로젝트 분석
+    - arrangement_reasoning: string (optional) # AI 배치 이유
 ```
 
 ## AI 통합
 
 ### Vertex AI 사용
 
-- **모델**: `gemini-2.5-flash` (또는 `gemini-2.0-flash-exp`)
-- **위치**: `us-central1`
-- **인증**: Service Account JSON 파일
+- **모델**: `gemini-2.0-flash-exp` (Gemini 2.5 Flash는 현재 사용 불가)
+- **위치**: 환경 변수 `VERTEX_AI_LOCATION` (기본값: `asia-northeast3`)
+- **인증**: Service Account JSON 파일 (`GOOGLE_APPLICATION_CREDENTIALS`)
+- **프로젝트 ID**: 환경 변수 `GOOGLE_CLOUD_PROJECT`
 
 ### AI 블록 생성 프로세스
 
 1. 사용자 입력 (프로젝트 개요, 진행 상황, 문제점, 참고사항)
-2. 프롬프트 생성 (구조화된 JSON 출력 요청)
-3. Vertex AI 호출
-4. JSON 파싱 및 검증
-5. 블록 생성 (레벨 -1, 기본 카테고리)
-6. Firestore 저장
+2. 체계적인 사고 과정(thinking_process)을 포함한 프롬프트 생성:
+   - 프로젝트 핵심 분석
+   - 카테고리 체계 설계
+   - 블록 범위 및 우선순위 결정
+   - 블록 생성 계획
+   - 서비스 설계자 관점의 검토
+   - 최종 블록 생성
+3. Vertex AI 호출 (Gemini 2.0 Flash Exp)
+4. JSON 파싱 및 검증 (thinking_process와 blocks 추출)
+5. 프로젝트 분석(project_analysis) 추출 및 프로젝트에 저장
+6. 블록 생성 (레벨 -1, 기본 카테고리)
+7. Firestore 저장
 
 ### AI 블록 배치 프로세스
 
 1. 사용자가 배치할 블록 선택
-2. 블록 정보 수집 (제목, 설명, 카테고리)
-3. 프롬프트 생성 (의존성, 우선순위, 위험도 고려)
-4. Vertex AI 호출
-5. 레벨 배정 및 이유 추출
-6. Firestore 업데이트
-7. 배치 이유 저장
+2. 저장된 프로젝트 분석(project_analysis) 조회
+3. 블록 정보 수집 (제목, 설명, 카테고리)
+4. 체계적인 사고 과정(thinking_process)을 포함한 프롬프트 생성:
+   - 프로젝트 분석 (project_analysis 활용)
+   - 레벨 5 (목표) 분석
+   - 레벨별 목표 설정
+   - 의존성 및 우선순위 분석
+   - 서비스 설계자 관점의 조언
+   - 최종 배치 결정
+5. Vertex AI 호출 (Gemini 2.0 Flash Exp)
+6. 레벨 배정 및 배치 이유(reasoning) 추출
+7. Firestore 업데이트 (블록 레벨 업데이트)
+8. 배치 이유(reasoning)를 프로젝트에 저장
 
 ## 보안 및 인증
 

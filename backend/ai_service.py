@@ -1,12 +1,55 @@
 """
 Vertex AI를 사용한 AI 서비스
+
+이 모듈은 Vertex AI (Gemini)를 사용하여 블록 생성 및 배치 기능을 제공합니다.
+- generate_blocks: 프로젝트 정보를 바탕으로 블록들을 생성
+- arrange_blocks: 생성된 블록들을 적절한 레벨에 배치
 """
 import os
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TypedDict
 from dotenv import load_dotenv
 import vertexai
 from vertexai.preview.generative_models import GenerativeModel
+
+# 타입 정의
+class GenerateBlocksResult(TypedDict, total=False):
+    """블록 생성 결과"""
+    blocks: List[Dict]
+    project_analysis: Optional[str]
+
+# 유틸리티 함수
+def _parse_ai_response(response_text: str) -> Dict:
+    """
+    AI 응답 텍스트를 파싱하여 JSON 객체로 변환
+    
+    Args:
+        response_text: AI가 반환한 원본 텍스트
+    
+    Returns:
+        파싱된 JSON 객체 (dict)
+    
+    Raises:
+        ValueError: JSON 파싱 실패 시
+    """
+    text = response_text.strip()
+    
+    # 디버깅: 원본 응답 출력
+    print(f"🔍 AI 원본 응답:\n{text[:1000]}")
+    
+    # JSON 추출 (마크다운 코드 블록 제거)
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0].strip()
+    elif "```" in text:
+        text = text.split("```")[1].split("```")[0].strip()
+    
+    # JSON 파싱
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON 파싱 실패: {e}")
+        print(f"파싱 시도한 텍스트: {text[:500]}")
+        raise ValueError(f"AI 응답을 파싱할 수 없습니다: {str(e)}")
 
 # .env 파일 로드
 load_dotenv()
@@ -78,9 +121,12 @@ def generate_blocks(
     problems: str,
     additional_info: str,
     existing_categories: List[str]
-) -> List[Dict]:
+) -> GenerateBlocksResult:
     """
     AI를 사용하여 블록 생성
+    
+    체계적인 사고 과정(thinking_process)을 거쳐 프로젝트에 필요한 블록들을 생성합니다.
+    생성된 블록은 최소 20개 이상이며, 프로젝트 분석(project_analysis)도 함께 반환됩니다.
     
     Args:
         project_overview: 프로젝트 개요
@@ -90,7 +136,14 @@ def generate_blocks(
         existing_categories: 기존 카테고리 목록
     
     Returns:
-        생성된 블록 리스트 (최소 5개)
+        {
+            "blocks": List[Dict],  # 생성된 블록 리스트 (최소 20개)
+            "project_analysis": Optional[str]  # 프로젝트 분석 결과
+        }
+    
+    Raises:
+        ValueError: AI 응답을 파싱할 수 없을 때
+        Exception: Vertex AI 호출 실패 시
     """
     try:
         model = GenerativeModel("gemini-2.0-flash-exp")  # gemini-2.5-flash는 아직 사용 불가, gemini-2.0-flash-exp 사용
@@ -200,24 +253,7 @@ def generate_blocks(
         response = model.generate_content(prompt)
         
         # 응답 파싱
-        response_text = response.text.strip()
-        
-        # 디버깅: 원본 응답 출력
-        print(f"🔍 AI 원본 응답:\n{response_text[:1000]}")
-        
-        # JSON 추출 (마크다운 코드 블록 제거)
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        # JSON 파싱
-        try:
-            response_data = json.loads(response_text)
-        except json.JSONDecodeError as e:
-            print(f"❌ JSON 파싱 실패: {e}")
-            print(f"파싱 시도한 텍스트: {response_text[:500]}")
-            raise
+        response_data = _parse_ai_response(response.text)
         
         # 디버깅: 파싱된 데이터 출력
         print(f"🔍 파싱된 생성 데이터 타입: {type(response_data)}")
@@ -263,10 +299,9 @@ def generate_blocks(
             "project_analysis": project_analysis
         }
         
-    except json.JSONDecodeError as e:
-        print(f"❌ JSON 파싱 실패: {e}")
-        print(f"응답 텍스트: {response_text[:500]}")
-        raise ValueError(f"AI 응답을 파싱할 수 없습니다: {str(e)}")
+    except ValueError as e:
+        # _parse_ai_response에서 발생한 ValueError를 그대로 전달
+        raise
     except Exception as e:
         print(f"❌ AI 블록 생성 실패: {e}")
         raise
@@ -444,24 +479,7 @@ def arrange_blocks(
         response = model.generate_content(prompt)
         
         # 응답 파싱
-        response_text = response.text.strip()
-        
-        # 디버깅: 원본 응답 출력
-        print(f"🔍 AI 원본 응답:\n{response_text[:1000]}")
-        
-        # JSON 추출 (마크다운 코드 블록 제거)
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0].strip()
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0].strip()
-        
-        # JSON 파싱
-        try:
-            response_data = json.loads(response_text)
-        except json.JSONDecodeError as e:
-            print(f"❌ JSON 파싱 실패: {e}")
-            print(f"파싱 시도한 텍스트: {response_text[:500]}")
-            raise
+        response_data = _parse_ai_response(response.text)
         
         # 디버깅: 파싱된 데이터 출력
         print(f"🔍 파싱된 배치 데이터: {response_data}")
@@ -594,10 +612,9 @@ def arrange_blocks(
         
         return result
         
-    except json.JSONDecodeError as e:
-        print(f"❌ JSON 파싱 실패: {e}")
-        print(f"응답 텍스트: {response_text[:500]}")
-        raise ValueError(f"AI 응답을 파싱할 수 없습니다: {str(e)}")
+    except ValueError as e:
+        # _parse_ai_response에서 발생한 ValueError를 그대로 전달
+        raise
     except Exception as e:
         print(f"❌ AI 블록 배치 실패: {e}")
         raise
