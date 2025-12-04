@@ -15,17 +15,13 @@ export const DropZone: React.FC<DropZoneProps> = ({ level, children }) => {
     <div
       ref={setNodeRef}
       style={{
-        minHeight: isOver ? '100px' : '60px',
-        border: isOver ? '2px dashed #6366f1' : '1px dashed transparent',
-        borderRadius: '12px',
-        backgroundColor: isOver ? '#eef2ff' : 'transparent',
+        width: '100%',
+        position: 'relative' as const,
+        // 드래그 중일 때 시각적 피드백
+        outline: isOver ? '2px dashed #6366f1' : 'none',
+        outlineOffset: isOver ? '2px' : '0',
+        borderRadius: isOver ? '8px' : '0',
         transition: 'all 0.2s ease',
-        padding: isOver ? '24px' : '20px',
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        gap: '12px',
       }}
     >
       {children}

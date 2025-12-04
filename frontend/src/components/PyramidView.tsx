@@ -71,68 +71,68 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           const isSingleBlock = blockCount === 1;
 
           return (
-            <div
-              key={level}
-              style={{
-                width: `${levelWidth}%`,
-                backgroundColor: getLevelBgColor(level),
-                borderRadius: '16px',
-                padding: isSingleBlock ? '8px 12px' : '12px',
-                border: '1px solid',
-                borderColor: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
-                transition: 'all 0.3s ease',
-                boxShadow: hasBlocks ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {/* 레벨 태그 */}
+            <DropZone key={level} level={level}>
               <div
                 style={{
+                  width: `${levelWidth}%`,
+                  backgroundColor: getLevelBgColor(level),
+                  borderRadius: '16px',
+                  padding: isSingleBlock ? '8px 12px' : '12px',
+                  border: '1px solid',
+                  borderColor: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#e9ecef',
+                  transition: 'all 0.3s ease',
+                  boxShadow: hasBlocks ? '0 4px 12px rgba(0,0,0,0.06)' : '0 2px 6px rgba(0,0,0,0.03)',
                   display: 'flex',
-                  justifyContent: 'flex-start',
-                  marginBottom: hasBlocks ? (isSingleBlock ? '4px' : '8px') : '0',
+                  flexDirection: 'column',
+                  minHeight: '80px',
                 }}
               >
-                <span
+                {/* 레벨 태그 */}
+                <div
                   style={{
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#6c757d',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: level === maxLevel ? '#eef2ff' : level === 0 ? '#ecfdf5' : '#f1f3f5',
-                    border: 'none',
-                    display: 'inline-block',
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    marginBottom: hasBlocks ? (isSingleBlock ? '4px' : '8px') : '0',
                   }}
                 >
-                  {level === maxLevel ? '목표' : level === 0 ? '기반' : `Level ${level}`}
-                </span>
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: level === maxLevel ? '#6366f1' : level === 0 ? '#10b981' : '#6c757d',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      backgroundColor: level === maxLevel ? '#eef2ff' : level === 0 ? '#ecfdf5' : '#f1f3f5',
+                      border: 'none',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {level === maxLevel ? '목표' : level === 0 ? '기반' : `Level ${level}`}
+                  </span>
+                </div>
+                {hasBlocks ? (
+                  <SortableContext
+                    items={levelBlocks.map((b) => b.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%' }}>
+                      {levelBlocks.map((block) => (
+                        <Block
+                          key={block.id}
+                          block={block}
+                          onEdit={onBlockEdit}
+                          onDelete={onBlockDelete}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                ) : (
+                  <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
+                    여기에 블록을 드롭하세요
+                  </span>
+                )}
               </div>
-              {hasBlocks ? (
-                <SortableContext
-                  items={levelBlocks.map((b) => b.id)}
-                  strategy={horizontalListSortingStrategy}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start' }}>
-                    {levelBlocks.map((block) => (
-                      <Block
-                        key={block.id}
-                        block={block}
-                        onEdit={onBlockEdit}
-                        onDelete={onBlockDelete}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              ) : (
-              <DropZone level={level}>
-                <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
-                  여기에 블록을 드롭하세요
-                </span>
-              </DropZone>
-              )}
-            </div>
+            </DropZone>
           );
         })}
       </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, closestCorners, CollisionDetection } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
 import { PyramidView } from './components/PyramidView';
@@ -252,6 +252,24 @@ function App() {
   const blocksByLevel = useMemo(() => groupBlocksByLevel(blocks), [blocks]);
   const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
 
+  // 커스텀 collision detection: 안정적인 드롭 감지
+  const customCollisionDetection: CollisionDetection = (args) => {
+    // 기본 collision detection 사용 (안정적)
+    const collisions = closestCorners(args);
+    
+    // 드롭존이 감지되면 우선 처리
+    if (collisions && collisions.length > 0) {
+      const dropzoneCollision = collisions.find(
+        collision => collision.id.toString().startsWith('dropzone-level-')
+      );
+      if (dropzoneCollision) {
+        return [dropzoneCollision];
+      }
+    }
+    
+    return collisions;
+  };
+
   // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
   const handleDragEnd = async (event: DragEndEvent) => {
     if (!projectId) return;
@@ -260,10 +278,10 @@ function App() {
     if (!over || active.id === over.id) return;
 
     const activeBlock = blocks.find((b) => b.id === active.id);
+    if (!activeBlock) return;
     
-    // 드롭존에 드롭한 경우 (빈 레벨에 드롭)
+    // 드롭존에 드롭한 경우 (레벨 컨테이너에 드롭)
     if (typeof over.id === 'string' && over.id.startsWith('dropzone-level-')) {
-      if (!activeBlock) return;
       const targetLevel = parseInt(over.id.replace('dropzone-level-', ''));
       const targetLevelBlocks = blocksByLevel[targetLevel] || [];
       const newOrder = targetLevelBlocks.length;
@@ -277,7 +295,7 @@ function App() {
 
     const overBlock = blocks.find((b) => b.id === over.id);
 
-    if (!activeBlock || !overBlock) return;
+    if (!overBlock) return;
 
     // 같은 레벨 내에서 드래그: order만 변경
     if (activeBlock.level === overBlock.level && activeBlock.level >= 0) {
@@ -285,7 +303,7 @@ function App() {
       const oldIndex = levelBlocks.findIndex((b) => b.id === active.id);
       const newIndex = levelBlocks.findIndex((b) => b.id === over.id);
       
-      if (oldIndex !== -1 && newIndex !== -1) {
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const newOrder = arrayMove(levelBlocks, oldIndex, newIndex);
 
         newOrder.forEach((block, index) => {
@@ -294,8 +312,9 @@ function App() {
           }
         });
       }
-    } else if (overBlock.level >= 0) {
+    } else if (overBlock.level >= 0 && activeBlock.level !== overBlock.level) {
       // 다른 레벨로 드래그: level과 order 변경
+      // 블록에 드롭했지만, 실제로는 해당 레벨의 드롭존에 드롭한 것으로 처리
       const targetLevel = overBlock.level;
       const targetLevelBlocks = blocksByLevel[targetLevel] || [];
       const newOrder = targetLevelBlocks.length;
@@ -510,7 +529,10 @@ function App() {
         }}
       >
         {activeTab === 0 ? (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext 
+            collisionDetection={customCollisionDetection}
+            onDragEnd={handleDragEnd}
+          >
             <div
               style={{
                 display: 'flex',

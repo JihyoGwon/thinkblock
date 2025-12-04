@@ -22,7 +22,9 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.8 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 9999 : 'auto', // 드래그 중일 때 매우 높은 z-index
   };
 
   // 레벨에 따른 색상 (밝은 회색+반투명)
@@ -55,8 +57,7 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete }) => {
         boxShadow: isDragging 
           ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
           : '0 2px 8px rgba(0,0,0,0.04)',
-        transition: 'all 0.2s ease',
-        position: 'relative',
+        transition: isDragging ? 'none' : 'all 0.2s ease',
       }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}

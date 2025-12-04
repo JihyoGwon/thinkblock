@@ -11,6 +11,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<Navigate to="/projects" replace />} />
         <Route path="/projects" element={<ProjectSelector />} />
+        <Route path="/project" element={<Navigate to="/projects" replace />} />
         <Route path="/project/:projectId" element={<App />} />
       </Routes>
     </BrowserRouter>
