@@ -59,6 +59,10 @@ function App() {
           // 카테고리가 없으면 기본 카테고리 사용
           setCategories(categoriesData.length > 0 ? categoriesData : [...DEFAULT_CATEGORIES]);
           setProject(projectData);
+          // 저장된 배치 이유 불러오기
+          if (projectData && (projectData as any).arrangement_reasoning) {
+            setArrangementReasoning((projectData as any).arrangement_reasoning);
+          }
           setLoading(false);
         }
       } catch (error) {

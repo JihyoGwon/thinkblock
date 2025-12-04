@@ -425,6 +425,16 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
             
             updated_blocks.append(updated_block)
         
+        # 배치 이유를 프로젝트에 저장
+        if arrangement_reasoning:
+            project_updates = {"arrangement_reasoning": arrangement_reasoning}
+            if USE_MEMORY_STORE:
+                store.update_project(project_id, project_updates)
+            else:
+                from firestore_service import update_project
+                update_project(project_id, project_updates)
+            print(f"✅ 배치 이유 프로젝트에 저장 완료: {len(arrangement_reasoning)} 문자")
+        
         print(f"🔍 API 응답에 포함할 reasoning: {len(arrangement_reasoning)} 문자")
         return {"blocks": updated_blocks, "reasoning": arrangement_reasoning}
     except ValueError as e:
