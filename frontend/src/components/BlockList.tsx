@@ -51,6 +51,9 @@ export const BlockList: React.FC<BlockListProps> = ({
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
+            width: '100%',
+            alignItems: 'flex-start', // 왼쪽 정렬
+            paddingLeft: '0', // 왼쪽 여백 제거
           }}
         >
           {unassignedBlocks.map((block) => (

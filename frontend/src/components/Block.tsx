@@ -61,10 +61,13 @@ export const Block: React.FC<BlockProps> = ({ block, onEdit, onDelete, isEditMod
         borderColor: isDragging ? '#6366f1' : '#e9ecef',
         borderRadius: '12px',
         padding: '12px',
-        margin: '4px',
+        margin: '4px 4px 4px 0', // 왼쪽 마진 제거
         cursor: isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-        minWidth: '320px',
-        maxWidth: '480px',
+        width: '100%', // 부모 컨테이너의 너비에 맞춤
+        minWidth: '240px', // 320px * 0.75
+        maxWidth: '360px', // 480px * 0.75
+        boxSizing: 'border-box', // padding과 border 포함한 너비 계산
+        flexShrink: 0, // flex 컨테이너에서 축소 방지
         boxShadow: isDragging 
           ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
           : '0 2px 8px rgba(0,0,0,0.04)',

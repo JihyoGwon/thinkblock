@@ -581,7 +581,7 @@ function App() {
               {/* 왼쪽: 입력 영역 및 블록 목록 */}
               <div
                 style={{
-                  width: isLeftPanelCollapsed ? '0' : '520px',
+                  width: isLeftPanelCollapsed ? '0' : '400px', // 520px * 0.75 (약간 여유 있게)
                   flexShrink: 0,
                   backgroundColor: '#f8f9fa',
                   borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
@@ -610,7 +610,7 @@ function App() {
                 onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
                 style={{
                   position: 'absolute',
-                  left: isLeftPanelCollapsed ? '0' : '520px',
+                  left: isLeftPanelCollapsed ? '0' : '400px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   width: '32px',
@@ -680,7 +680,7 @@ function App() {
             {/* 왼쪽: 입력 영역 및 블록 목록 */}
             <div
               style={{
-                width: isLeftPanelCollapsed ? '0' : '520px',
+                width: isLeftPanelCollapsed ? '0' : '400px', // 520px * 0.75 (약간 여유 있게)
                 flexShrink: 0,
                 backgroundColor: '#f8f9fa',
                 borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
