@@ -4,11 +4,11 @@ interface TabsProps {
   activeTab: number;
   onTabChange: (tab: number) => void;
   children: ReactNode;
-  isEditMode?: boolean;
-  onEditModeChange?: (isEditMode: boolean) => void;
+  mode?: 'view' | 'drag' | 'connection';
+  onModeChange?: (mode: 'view' | 'drag' | 'connection') => void;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, isEditMode = false, onEditModeChange }) => {
+export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, mode = 'view', onModeChange }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
@@ -74,63 +74,142 @@ export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, is
           표 뷰
         </button>
         </div>
-        {onEditModeChange && (
+        {onModeChange && (
           <div
             style={{
               marginRight: '16px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '4px',
             }}
           >
-            <span
-              style={{
-                fontSize: '14px',
-                color: '#6c757d',
-                fontWeight: '500',
-              }}
-            >
-              수정 모드
-            </span>
+            {/* 눈 아이콘 - 보기 모드 */}
             <button
-              onClick={() => onEditModeChange(!isEditMode)}
+              onClick={() => onModeChange('view')}
               style={{
-                position: 'relative',
-                width: '44px',
-                height: '24px',
-                borderRadius: '12px',
+                padding: '8px',
                 border: 'none',
-                backgroundColor: isEditMode ? '#6366f1' : '#e9ecef',
+                backgroundColor: mode === 'view' ? '#6366f1' : 'transparent',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 transition: 'background-color 0.2s',
-                padding: '0',
-                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: mode === 'view' ? '#ffffff' : '#6c757d',
               }}
               onMouseEnter={(e) => {
-                if (!isEditMode) {
-                  e.currentTarget.style.backgroundColor = '#d1d5db';
+                if (mode !== 'view') {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isEditMode) {
-                  e.currentTarget.style.backgroundColor = '#e9ecef';
+                if (mode !== 'view') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }
               }}
-              title={isEditMode ? '수정 모드 비활성화' : '수정 모드 활성화'}
+              title="보기 모드"
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '2px',
-                  left: isEditMode ? '22px' : '2px',
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  backgroundColor: '#ffffff',
-                  transition: 'left 0.2s ease',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                }}
-              />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+            
+            {/* 손 아이콘 - 드래그 모드 */}
+            <button
+              onClick={() => onModeChange('drag')}
+              style={{
+                padding: '8px',
+                border: 'none',
+                backgroundColor: mode === 'drag' ? '#6366f1' : 'transparent',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: mode === 'drag' ? '#ffffff' : '#6c757d',
+              }}
+              onMouseEnter={(e) => {
+                if (mode !== 'drag') {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (mode !== 'drag') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+              title="드래그 모드"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/>
+                <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/>
+                <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/>
+                <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+              </svg>
+            </button>
+            
+            {/* 연결선 아이콘 - 연결 모드 */}
+            <button
+              onClick={() => onModeChange('connection')}
+              style={{
+                padding: '8px',
+                border: 'none',
+                backgroundColor: mode === 'connection' ? '#6366f1' : 'transparent',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: mode === 'connection' ? '#ffffff' : '#6c757d',
+              }}
+              onMouseEnter={(e) => {
+                if (mode !== 'connection') {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (mode !== 'connection') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+              title="연결선 모드"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="19" cy="5" r="2"/>
+                <circle cx="5" cy="19" r="2"/>
+                <path d="M5 17A12 12 0 0 1 17 5"/>
+              </svg>
             </button>
           </div>
         )}

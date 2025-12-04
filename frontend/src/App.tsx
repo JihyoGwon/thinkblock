@@ -27,7 +27,8 @@ function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false); // 수정 모드 토글
+  // 모드: 'view' (보기), 'drag' (드래그), 'connection' (연결선)
+  const [mode, setMode] = useState<'view' | 'drag' | 'connection'>('view'); // 기본값: 보기 모드
   const [hasDragged, setHasDragged] = useState(false); // 실제로 드래그했는지 추적
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
@@ -552,8 +553,8 @@ function App() {
       <Tabs 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
-        isEditMode={isEditMode}
-        onEditModeChange={setIsEditMode}
+        mode={mode}
+        onModeChange={setMode}
       >
         <main
         style={{
@@ -601,7 +602,7 @@ function App() {
                   blocks={blocks}
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
-                  isEditMode={isEditMode}
+                  isEditMode={mode === 'drag'}
                 />
               </div>
 
@@ -662,7 +663,7 @@ function App() {
                   maxLevel={maxLevel}
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
-                  isEditMode={isEditMode}
+                  isEditMode={mode === 'drag'}
                 />
               </div>
             </div>
