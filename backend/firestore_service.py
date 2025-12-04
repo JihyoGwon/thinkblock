@@ -63,6 +63,7 @@ class BlockModel(BaseModel):
     level: int
     order: int
     category: Optional[str] = None  # 카테고리 필드 추가
+    dependencies: Optional[List[str]] = None  # 의존성 블록 ID 목록
 
 def get_all_blocks(project_id: str) -> List[dict]:
     """프로젝트의 모든 블록 조회"""

@@ -7,6 +7,12 @@ interface BlockListProps {
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
   isEditMode?: boolean;
+  isConnectionMode?: boolean;
+  connectingFromBlockId?: string | null;
+  hoveredBlockId?: string | null;
+  onConnectionStart?: (blockId: string) => void;
+  onConnectionEnd?: (blockId: string) => void;
+  onBlockHover?: (blockId: string | null) => void;
 }
 
 export const BlockList: React.FC<BlockListProps> = ({
@@ -14,6 +20,12 @@ export const BlockList: React.FC<BlockListProps> = ({
   onBlockDelete,
   onBlockEdit,
   isEditMode = false,
+  isConnectionMode = false,
+  connectingFromBlockId = null,
+  hoveredBlockId = null,
+  onConnectionStart,
+  onConnectionEnd,
+  onBlockHover,
 }) => {
   // 레벨이 0 미만인 블록들만 표시 (아직 피라미드에 배치되지 않은 블록)
   const unassignedBlocks = blocks.filter((block) => block.level < 0);
@@ -63,6 +75,12 @@ export const BlockList: React.FC<BlockListProps> = ({
               onEdit={onBlockEdit}
               onDelete={onBlockDelete}
               isEditMode={isEditMode}
+              isConnectionMode={isConnectionMode}
+              connectingFromBlockId={connectingFromBlockId}
+              hoveredBlockId={hoveredBlockId}
+              onConnectionStart={onConnectionStart}
+              onConnectionEnd={onConnectionEnd}
+              onBlockHover={onBlockHover}
             />
           ))}
         </div>

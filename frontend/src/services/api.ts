@@ -131,5 +131,22 @@ export const api = {
     (result as any).reasoning = reasoning;
     return result;
   },
+
+  // 의존성 추가
+  addDependency: async (projectId: string, blockId: string, dependencyId: string): Promise<Block> => {
+    const response = await apiClient.post(
+      `${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}/dependencies`,
+      { dependency_id: dependencyId }
+    );
+    return response.data.block;
+  },
+
+  // 의존성 제거
+  removeDependency: async (projectId: string, blockId: string, dependencyId: string): Promise<Block> => {
+    const response = await apiClient.delete(
+      `${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}/dependencies/${dependencyId}`
+    );
+    return response.data.block;
+  },
 };
 

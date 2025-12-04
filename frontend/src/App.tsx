@@ -32,6 +32,9 @@ function App() {
   // 모드: 'view' (보기), 'drag' (드래그), 'connection' (연결선)
   const [mode, setMode] = useState<'view' | 'drag' | 'connection'>('view'); // 기본값: 보기 모드
   const [hasDragged, setHasDragged] = useState(false); // 실제로 드래그했는지 추적
+  // 연결선 모드 상태
+  const [connectingFromBlockId, setConnectingFromBlockId] = useState<string | null>(null); // 연결 시작 블록 ID
+  const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null); // 호버된 블록 ID
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
@@ -174,6 +177,66 @@ function App() {
     setEditingBlock(block);
     setShowForm(true);
   }, []);
+
+  // 연결선 모드 핸들러
+  const handleConnectionStart = useCallback((blockId: string) => {
+    if (mode !== 'connection') return;
+    if (blockId === '') {
+      // 빈 문자열이면 연결 취소
+      setConnectingFromBlockId(null);
+      setHoveredBlockId(null);
+      return;
+    }
+    console.log('연결 시작:', blockId);
+    setConnectingFromBlockId(blockId);
+  }, [mode]);
+
+  const handleConnectionEnd = useCallback(async (toBlockId: string) => {
+    console.log('handleConnectionEnd 호출:', { mode, connectingFromBlockId, toBlockId, projectId });
+    if (mode !== 'connection' || !connectingFromBlockId || !projectId) {
+      console.log('조건 불만족:', { mode, connectingFromBlockId, projectId });
+      return;
+    }
+    if (connectingFromBlockId === toBlockId) {
+      console.log('같은 블록 클릭, 연결 취소');
+      setConnectingFromBlockId(null);
+      setHoveredBlockId(null);
+      return;
+    }
+    try {
+      console.log('의존성 추가 시작:', connectingFromBlockId, '->', toBlockId);
+      await api.addDependency(projectId, connectingFromBlockId, toBlockId);
+      // 블록 목록 새로고침
+      const blocksData = await api.getBlocks(projectId);
+      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+      setConnectingFromBlockId(null);
+      setHoveredBlockId(null);
+      console.log('의존성 추가 완료');
+    } catch (error) {
+      console.error('의존성 추가 실패:', error);
+      handleError(error, '의존성 추가에 실패했습니다.');
+      setConnectingFromBlockId(null);
+      setHoveredBlockId(null);
+    }
+  }, [mode, connectingFromBlockId, projectId]);
+
+  const handleConnectionCancel = useCallback(() => {
+    if (mode !== 'connection') return;
+    setConnectingFromBlockId(null);
+    setHoveredBlockId(null);
+  }, [mode]);
+
+  const handleRemoveDependency = useCallback(async (fromBlockId: string, toBlockId: string) => {
+    if (!projectId) return;
+
+    try {
+      await api.removeDependency(projectId, fromBlockId, toBlockId);
+      const blocksData = await api.getBlocks(projectId);
+      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+    } catch (error) {
+      handleError(error, '의존성 삭제에 실패했습니다.');
+    }
+  }, [projectId]);
 
   const handleCategoriesChange = async (newCategories: string[]) => {
     if (!projectId) return;
@@ -604,6 +667,12 @@ function App() {
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
                   isEditMode={mode === 'drag'}
+                  isConnectionMode={mode === 'connection'}
+                  connectingFromBlockId={connectingFromBlockId}
+                  hoveredBlockId={hoveredBlockId}
+                  onConnectionStart={handleConnectionStart}
+                  onConnectionEnd={handleConnectionEnd}
+                  onBlockHover={setHoveredBlockId}
                 />
               </div>
 
@@ -665,6 +734,15 @@ function App() {
                   onBlockDelete={handleDeleteBlock}
                   onBlockEdit={handleEditBlock}
                   isEditMode={mode === 'drag'}
+                  isConnectionMode={mode === 'connection'}
+                  connectingFromBlockId={connectingFromBlockId}
+                  hoveredBlockId={hoveredBlockId}
+                  onConnectionStart={handleConnectionStart}
+                  onConnectionEnd={handleConnectionEnd}
+                  onConnectionCancel={handleConnectionCancel}
+                  onBlockHover={setHoveredBlockId}
+                  onRemoveDependency={handleRemoveDependency}
+                  allBlocks={blocks}
                 />
               </div>
             </div>

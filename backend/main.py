@@ -55,6 +55,7 @@ class Block(BaseModel):
     level: int  # 계층 레벨 (0이 가장 아래, 숫자가 클수록 위)
     order: int  # 같은 레벨 내 순서
     category: Optional[str] = None  # 카테고리
+    dependencies: Optional[List[str]] = None  # 의존성 블록 ID 목록
 
 class BlockCreate(BaseModel):
     title: str
@@ -153,6 +154,73 @@ async def delete_block_endpoint(project_id: str, block_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 삭제 실패: {str(e)}")
+
+class DependencyRequest(BaseModel):
+    dependency_id: str
+
+@app.post("/api/projects/{project_id}/blocks/{block_id}/dependencies")
+async def add_dependency_endpoint(project_id: str, block_id: str, request: DependencyRequest):
+    """블록에 의존성 추가"""
+    try:
+        if USE_MEMORY_STORE:
+            block = store.get_block(project_id, block_id)
+            if not block:
+                raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            
+            dependencies = block.get("dependencies", [])
+            if request.dependency_id not in dependencies:
+                dependencies.append(request.dependency_id)
+                store.update_block(project_id, block_id, {"dependencies": dependencies})
+            updated_block = store.get_block(project_id, block_id)
+        else:
+            from firestore_service import get_block, update_block
+            block = get_block(project_id, block_id)
+            if not block:
+                raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            
+            dependencies = block.get("dependencies", [])
+            if request.dependency_id not in dependencies:
+                dependencies.append(request.dependency_id)
+                update_block(project_id, block_id, {"dependencies": dependencies})
+            updated_block = get_block(project_id, block_id)
+        
+        return {"block": updated_block}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"의존성 추가 실패: {str(e)}")
+
+@app.delete("/api/projects/{project_id}/blocks/{block_id}/dependencies/{dependency_id}")
+async def remove_dependency_endpoint(project_id: str, block_id: str, dependency_id: str):
+    """블록에서 의존성 제거"""
+    try:
+        if USE_MEMORY_STORE:
+            block = store.get_block(project_id, block_id)
+            if not block:
+                raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            
+            dependencies = block.get("dependencies", [])
+            if dependency_id in dependencies:
+                dependencies.remove(dependency_id)
+                store.update_block(project_id, block_id, {"dependencies": dependencies})
+            updated_block = store.get_block(project_id, block_id)
+        else:
+            from firestore_service import get_block, update_block
+            block = get_block(project_id, block_id)
+            if not block:
+                raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            
+            dependencies = block.get("dependencies", [])
+            if dependency_id in dependencies:
+                dependencies.remove(dependency_id)
+                update_block(project_id, block_id, {"dependencies": dependencies})
+            updated_block = get_block(project_id, block_id)
+        
+        return {"block": updated_block}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"의존성 제거 실패: {str(e)}")
 
 @app.get("/api/projects/{project_id}/categories")
 async def get_categories_endpoint(project_id: str):
