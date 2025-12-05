@@ -45,7 +45,7 @@ export const BlockForm: React.FC<BlockFormProps> = ({
       title: title.trim(),
       description: description.trim(),
       level,
-      order: 0, // 임시값, 서버에서 계산
+      order: block?.order ?? 0, // 수정 시 기존 order 유지, 생성 시 0
       category: category || undefined,
     });
 
