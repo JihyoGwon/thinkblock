@@ -14,5 +14,8 @@ export const CATEGORIES = [
   '기술',
 ] as const;
 
+// DEFAULT_CATEGORIES는 CATEGORIES의 별칭 (호환성을 위해)
+export const DEFAULT_CATEGORIES = [...CATEGORIES] as string[];
+
 export type Category = typeof CATEGORIES[number] | '';
 

@@ -8,24 +8,37 @@ import { PyramidView } from './components/PyramidView';
 import { TableView } from './components/TableView';
 import { Tabs } from './components/Tabs';
 import { BlockForm } from './components/BlockForm';
-import { BlockInput } from './components/BlockInput';
 import { BlockList } from './components/BlockList';
+import { LeftPanel } from './components/LeftPanel';
+import { PanelToggleButton } from './components/PanelToggleButton';
 import { CategoryManager } from './components/CategoryManager';
 import { AIGenerateBlocksModal } from './components/AIGenerateBlocksModal';
 import { AIArrangeBlocksModal } from './components/AIArrangeBlocksModal';
 import { ArrangementReasoningModal } from './components/ArrangementReasoningModal';
 import { api } from './services/api';
+import { useBlocks } from './hooks/useBlocks';
+import { useProjectData } from './hooks/useProjectData';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
-import { CATEGORIES as DEFAULT_CATEGORIES } from './constants/categories';
 import { DRAG_THRESHOLD } from './constants/block';
 import './App.css';
 
 function App() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const [blocks, setBlocks] = useState<BlockType[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // 커스텀 훅 사용
+  const { blocks, loading, createBlock, updateBlock, deleteBlock, setBlocks, fetchBlocks } = useBlocks(projectId);
+  const {
+    categories,
+    project,
+    arrangementReasoning,
+    loading: projectLoading,
+    setArrangementReasoning,
+    updateCategories,
+    updateProject,
+  } = useProjectData(projectId);
+  
   const [activeTab, setActiveTab] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
@@ -39,9 +52,6 @@ function App() {
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
   const [showArrangementReasoning, setShowArrangementReasoning] = useState(false);
-  const [arrangementReasoning, setArrangementReasoning] = useState<string>('');
-  const [categories, setCategories] = useState<string[]>([]);
-  const [project, setProject] = useState<{ id: string; name: string } | null>(null);
   const [isEditingProjectName, setIsEditingProjectName] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -52,103 +62,46 @@ function App() {
       navigate('/projects');
       return;
     }
-
-    let cancelled = false;
-    
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [blocksData, categoriesData, projectData] = await Promise.all([
-          api.getBlocks(projectId),
-          api.getCategories(projectId),
-          api.getProject(projectId),
-        ]);
-        if (!cancelled) {
-          setBlocks(Array.isArray(blocksData) ? blocksData : []);
-          // 카테고리가 없으면 기본 카테고리 사용
-          setCategories(categoriesData.length > 0 ? categoriesData : [...DEFAULT_CATEGORIES]);
-          setProject(projectData);
-          // 저장된 배치 이유 불러오기
-          if (projectData && (projectData as any).arrangement_reasoning) {
-            setArrangementReasoning((projectData as any).arrangement_reasoning);
-          }
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('데이터 로드 실패:', error);
-        if (!cancelled) {
-          setBlocks([]);
-          // 에러 발생 시 기본 카테고리 사용
-          setCategories([...DEFAULT_CATEGORIES]);
-          setLoading(false);
-        }
-      }
-    };
-    
-    fetchData();
-    
-    return () => {
-      cancelled = true;
-    };
   }, [projectId, navigate]);
 
   const handleCreateBlock = async (blockData: Omit<BlockType, 'id'>) => {
-    if (!projectId) return;
     try {
-      const newBlock = await api.createBlock(projectId, blockData);
-      setBlocks([...blocks, newBlock]);
+      await createBlock(blockData);
       setShowForm(false);
     } catch (error) {
-      console.error('블록 생성 실패:', error);
-      alert('블록 생성에 실패했습니다.');
+      // 에러는 useBlocks에서 처리됨
     }
   };
 
   const handleQuickCreate = async (title: string) => {
-    if (!projectId) return;
     try {
-      // 레벨 -1로 설정하여 아직 배치되지 않은 블록으로 표시
-      // 실제로는 레벨 0이 아닌 특별한 값으로 관리하거나, 별도 필드로 관리
-      // 일단 level을 -1로 설정하고, 피라미드에서는 level >= 0만 표시
       const unassignedBlocks = blocks.filter((b) => b.level < 0);
-      const newBlock = await api.createBlock(projectId, {
+      await createBlock({
         title,
         description: '',
         level: -1, // 아직 배치되지 않은 블록
         order: unassignedBlocks.length,
       });
-      setBlocks([...blocks, newBlock]);
     } catch (error) {
-      console.error('블록 생성 실패:', error);
-      alert('블록 생성에 실패했습니다.');
+      // 에러는 useBlocks에서 처리됨
     }
   };
 
 
   const handleUpdateBlock = async (blockId: string, updates: Partial<BlockType>) => {
-    if (!projectId) return;
     try {
-      const updatedBlock = await api.updateBlock(projectId, blockId, updates);
-      setBlocks(blocks.map((b) => (b.id === blockId ? updatedBlock : b)));
+      await updateBlock(blockId, updates);
       setEditingBlock(null);
       setShowForm(false);
     } catch (error) {
-      console.error('블록 업데이트 실패:', error);
-      alert('블록 업데이트에 실패했습니다.');
+      // 에러는 useBlocks에서 처리됨
     }
   };
 
   const handleDeleteBlock = useCallback(async (blockId: string) => {
-    if (!projectId) return;
     if (!showConfirm('정말 이 블록을 삭제하시겠습니까?')) return;
-
-    try {
-      await api.deleteBlock(projectId, blockId);
-      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
-    } catch (error) {
-      handleError(error, '블록 삭제에 실패했습니다.');
-    }
-  }, [projectId]);
+    await deleteBlock(blockId);
+  }, [deleteBlock]);
 
   const handleResetBlocks = async () => {
     if (!projectId) return;
@@ -161,15 +114,13 @@ function App() {
     
     try {
       // 모든 블록 삭제
-      const deletePromises = blocks.map((block) => api.deleteBlock(projectId, block.id));
+      const deletePromises = blocks.map((block) => deleteBlock(block.id));
       await Promise.all(deletePromises);
       
-      setBlocks([]);
       setShowResetConfirm(false);
       setArrangementReasoning(''); // 배치 이유도 초기화
     } catch (error) {
-      console.error('블록 초기화 실패:', error);
-      alert('블록 초기화에 실패했습니다.');
+      // 에러는 useBlocks에서 처리됨
     }
   };
 
@@ -204,16 +155,11 @@ function App() {
       return;
     }
     try {
-      console.log('의존성 추가 시작:', connectingFromBlockId, '->', toBlockId);
       await api.addDependency(projectId, connectingFromBlockId, toBlockId);
-      // 블록 목록 새로고침
-      const blocksData = await api.getBlocks(projectId);
-      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+      await fetchBlocks();
       setConnectingFromBlockId(null);
       setHoveredBlockId(null);
-      console.log('의존성 추가 완료');
     } catch (error) {
-      console.error('의존성 추가 실패:', error);
       handleError(error, '의존성 추가에 실패했습니다.');
       setConnectingFromBlockId(null);
       setHoveredBlockId(null);
@@ -231,21 +177,17 @@ function App() {
 
     try {
       await api.removeDependency(projectId, fromBlockId, toBlockId);
-      const blocksData = await api.getBlocks(projectId);
-      setBlocks(Array.isArray(blocksData) ? blocksData : []);
+      await fetchBlocks();
     } catch (error) {
       handleError(error, '의존성 삭제에 실패했습니다.');
     }
   }, [projectId]);
 
   const handleCategoriesChange = async (newCategories: string[]) => {
-    if (!projectId) return;
     try {
-      await api.updateCategories(projectId, newCategories);
-      setCategories(newCategories);
+      await updateCategories(newCategories);
     } catch (error) {
-      console.error('카테고리 업데이트 실패:', error);
-      alert('카테고리 업데이트에 실패했습니다.');
+      // 에러는 useProjectData에서 처리됨
     }
   };
 
@@ -256,18 +198,16 @@ function App() {
   };
 
   const handleProjectNameSave = async () => {
-    if (!projectId || !editingProjectName.trim()) {
+    if (!editingProjectName.trim()) {
       setIsEditingProjectName(false);
       return;
     }
 
     try {
-      const updatedProject = await api.updateProject(projectId, { name: editingProjectName.trim() });
-      setProject(updatedProject);
+      await updateProject({ name: editingProjectName.trim() });
       setIsEditingProjectName(false);
     } catch (error) {
-      console.error('프로젝트명 업데이트 실패:', error);
-      alert('프로젝트명 업데이트에 실패했습니다.');
+      // 에러는 useProjectData에서 처리됨
     }
   };
 
@@ -285,34 +225,15 @@ function App() {
   };
 
   const handleAIGenerateSuccess = async () => {
-    // 블록 목록 새로고침
-    if (!projectId) return;
-    try {
-      const blocksData = await api.getBlocks(projectId);
-      setBlocks(Array.isArray(blocksData) ? blocksData : []);
-    } catch (error) {
-      console.error('블록 로드 실패:', error);
-    }
+    await fetchBlocks();
   };
 
   const handleAIArrangeSuccess = async (reasoning?: string) => {
-    // 블록 목록 새로고침
-    if (!projectId) return;
-    try {
-      const blocksData = await api.getBlocks(projectId);
-      setBlocks(Array.isArray(blocksData) ? blocksData : []);
-      
-      // 배치 이유 저장
-      console.log('🔍 handleAIArrangeSuccess 호출됨, reasoning:', reasoning ? `${reasoning.length} 문자` : '없음');
-      if (reasoning) {
-        setArrangementReasoning(reasoning);
-        console.log('🔍 arrangementReasoning state 설정 완료');
-      } else {
-        setArrangementReasoning('');
-        console.log('🔍 arrangementReasoning을 빈 문자열로 설정');
-      }
-    } catch (error) {
-      console.error('블록 로드 실패:', error);
+    await fetchBlocks();
+    if (reasoning) {
+      setArrangementReasoning(reasoning);
+    } else {
+      setArrangementReasoning('');
     }
   };
 
@@ -420,7 +341,7 @@ function App() {
     }
   };
 
-  if (loading) {
+  if (loading || projectLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <div style={{ fontSize: '18px', marginBottom: '20px' }}>로딩 중...</div>
@@ -644,79 +565,29 @@ function App() {
               }}
             >
               {/* 왼쪽: 입력 영역 및 블록 목록 */}
-              <div
-                style={{
-                  width: isLeftPanelCollapsed ? '0' : '400px', // 520px * 0.75 (약간 여유 있게)
-                  flexShrink: 0,
-                  backgroundColor: '#f8f9fa',
-                  borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
-                  padding: isLeftPanelCollapsed ? '0' : '32px',
-                  display: isLeftPanelCollapsed ? 'none' : 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  transition: 'width 0.3s ease, padding 0.3s ease, border 0.3s ease',
-                }}
-              >
-                        <BlockInput 
-                          onSubmit={handleQuickCreate} 
-                          onAIClick={handleAIClick} 
-                          onAIArrangeClick={handleAIArrangeClick}
-                        />
-                <BlockList
-                  blocks={blocks}
-                  onBlockDelete={handleDeleteBlock}
-                  onBlockEdit={handleEditBlock}
-                  isEditMode={mode === 'drag'}
-                  isConnectionMode={mode === 'connection'}
-                  connectingFromBlockId={connectingFromBlockId}
-                  hoveredBlockId={hoveredBlockId}
-                  onConnectionStart={handleConnectionStart}
-                  onConnectionEnd={handleConnectionEnd}
-                  onBlockHover={setHoveredBlockId}
-                />
-              </div>
+              <LeftPanel
+                isCollapsed={isLeftPanelCollapsed}
+                blocks={blocks}
+                onQuickCreate={handleQuickCreate}
+                onAIClick={handleAIClick}
+                onAIArrangeClick={handleAIArrangeClick}
+                onBlockDelete={handleDeleteBlock}
+                onBlockEdit={handleEditBlock}
+                isEditMode={mode === 'drag'}
+                isConnectionMode={mode === 'connection'}
+                connectingFromBlockId={connectingFromBlockId}
+                hoveredBlockId={hoveredBlockId}
+                onConnectionStart={handleConnectionStart}
+                onConnectionEnd={handleConnectionEnd}
+                onBlockHover={setHoveredBlockId}
+              />
 
               {/* 토글 버튼 */}
-              <button
-                onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
-                style={{
-                  position: 'absolute',
-                  left: isLeftPanelCollapsed ? '0' : '400px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '32px',
-                  height: '64px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e9ecef',
-                  borderLeft: isLeftPanelCollapsed ? '1px solid #e9ecef' : 'none',
-                  borderRadius: '0 8px 8px 0',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  transition: 'left 0.3s ease, border-radius 0.3s ease',
-                  zIndex: 10,
-                }}
-                title={isLeftPanelCollapsed ? '블록 목록 펼치기' : '블록 목록 접기'}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{
-                    transform: isLeftPanelCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.3s ease',
-                  }}
-                >
-                  <path
-                    d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12L15.41 7.41Z"
-                    fill="#495057"
-                  />
-                </svg>
-              </button>
+              <PanelToggleButton
+                isCollapsed={isLeftPanelCollapsed}
+                leftPosition={400}
+                onToggle={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+              />
 
               {/* 오른쪽: 피라미드 영역 */}
               <div
@@ -758,72 +629,22 @@ function App() {
             }}
           >
             {/* 왼쪽: 입력 영역 및 블록 목록 */}
-            <div
-              style={{
-                width: isLeftPanelCollapsed ? '0' : '400px', // 520px * 0.75 (약간 여유 있게)
-                flexShrink: 0,
-                backgroundColor: '#f8f9fa',
-                borderRight: isLeftPanelCollapsed ? 'none' : '1px solid #e9ecef',
-                padding: isLeftPanelCollapsed ? '0' : '32px',
-                display: isLeftPanelCollapsed ? 'none' : 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                transition: 'width 0.3s ease, padding 0.3s ease, border 0.3s ease',
-              }}
-            >
-                        <BlockInput 
-                          onSubmit={handleQuickCreate} 
-                          onAIClick={handleAIClick} 
-                          onAIArrangeClick={handleAIArrangeClick}
-                        />
-              <BlockList
-                blocks={blocks}
-                onBlockDelete={handleDeleteBlock}
-                onBlockEdit={handleEditBlock}
-              />
-            </div>
+            <LeftPanel
+              isCollapsed={isLeftPanelCollapsed}
+              blocks={blocks}
+              onQuickCreate={handleQuickCreate}
+              onAIClick={handleAIClick}
+              onAIArrangeClick={handleAIArrangeClick}
+              onBlockDelete={handleDeleteBlock}
+              onBlockEdit={handleEditBlock}
+            />
 
             {/* 토글 버튼 */}
-            <button
-              onClick={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
-              style={{
-                position: 'absolute',
-                left: isLeftPanelCollapsed ? '0' : '520px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '32px',
-                height: '64px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e9ecef',
-                borderLeft: isLeftPanelCollapsed ? '1px solid #e9ecef' : 'none',
-                borderRadius: isLeftPanelCollapsed ? '0 8px 8px 0' : '8px 0 0 8px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                transition: 'left 0.3s ease, border-radius 0.3s ease',
-                zIndex: 10,
-              }}
-              title={isLeftPanelCollapsed ? '블록 목록 펼치기' : '블록 목록 접기'}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                  transform: isLeftPanelCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.3s ease',
-                }}
-              >
-                <path
-                  d="M15.41 7.41L14 6L8 12L14 18L15.41 16.59L10.83 12L15.41 7.41Z"
-                  fill="#495057"
-                />
-              </svg>
-            </button>
+            <PanelToggleButton
+              isCollapsed={isLeftPanelCollapsed}
+              leftPosition={400}
+              onToggle={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+            />
 
             {/* 오른쪽: 표 영역 */}
             <div

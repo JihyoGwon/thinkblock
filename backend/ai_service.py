@@ -7,6 +7,7 @@ Vertex AI를 사용한 AI 서비스
 """
 import os
 import json
+import pathlib
 from typing import List, Dict, Optional, TypedDict
 from dotenv import load_dotenv
 import vertexai
@@ -57,36 +58,12 @@ load_dotenv()
 # Vertex AI 초기화
 def init_vertex_ai():
     """Vertex AI 초기화"""
-    import pathlib
+    from utils import find_credentials_file
     
     # .env 파일에서 환경 변수 가져오기
-    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or find_credentials_file()
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("VERTEX_AI_LOCATION")
-    
-    # 프로젝트 루트 경로 계산
-    project_root = pathlib.Path(__file__).parent.parent
-    
-    # cred_path가 있으면 절대 경로로 변환 (상대 경로인 경우 프로젝트 루트 기준)
-    if cred_path:
-        if not os.path.isabs(cred_path):
-            # 상대 경로인 경우 프로젝트 루트 기준으로 변환
-            cred_path = str(project_root / cred_path)
-        # 파일이 존재하는지 확인
-        if not os.path.exists(cred_path):
-            print(f"⚠️  지정된 인증 파일을 찾을 수 없습니다: {cred_path}")
-            cred_path = None
-    
-    # 환경 변수가 없거나 파일이 없으면 프로젝트 루트에서 찾기
-    if not cred_path:
-        possible_paths = [
-            project_root / "vertex-ai-thinkblock.json",
-            project_root / "firebase-credentials.json",
-        ]
-        for path in possible_paths:
-            if path.exists():
-                cred_path = str(path.absolute())
-                break
     
     # 기본값 설정
     if not project_id:
@@ -112,7 +89,6 @@ def init_vertex_ai():
         except Exception as e:
             print(f"⚠️  Vertex AI 초기화 실패: {e}")
             print(f"   인증 파일 경로: {cred_path}")
-            print(f"   프로젝트 루트: {project_root}")
             return False
 
 def generate_blocks(

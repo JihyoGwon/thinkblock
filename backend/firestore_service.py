@@ -7,20 +7,9 @@ import os
 # Firestore 초기화
 def init_firestore():
     if not firebase_admin._apps:
-        cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
+        from utils import find_credentials_file
         
-        # 환경 변수가 없으면 프로젝트 루트에서 찾기
-        if not cred_path:
-            import pathlib
-            project_root = pathlib.Path(__file__).parent.parent
-            possible_paths = [
-                project_root / "vertex-ai-thinkblock.json",
-                project_root / "firebase-credentials.json",
-            ]
-            for path in possible_paths:
-                if path.exists():
-                    cred_path = str(path)
-                    break
+        cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH") or find_credentials_file()
         
         if cred_path and os.path.exists(cred_path):
             try:
