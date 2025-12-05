@@ -8,7 +8,6 @@ import { PyramidView } from './components/PyramidView';
 import { TableView } from './components/TableView';
 import { Tabs } from './components/Tabs';
 import { BlockForm } from './components/BlockForm';
-import { BlockList } from './components/BlockList';
 import { LeftPanel } from './components/LeftPanel';
 import { PanelToggleButton } from './components/PanelToggleButton';
 import { CategoryManager } from './components/CategoryManager';
@@ -28,7 +27,7 @@ function App() {
   const navigate = useNavigate();
   
   // 커스텀 훅 사용
-  const { blocks, loading, createBlock, updateBlock, deleteBlock, setBlocks, fetchBlocks } = useBlocks(projectId);
+  const { blocks, loading, createBlock, updateBlock, deleteBlock, fetchBlocks } = useBlocks(projectId);
   const {
     categories,
     project,

@@ -91,14 +91,14 @@ export const Block: React.FC<BlockProps> = ({
           : '0 2px 8px rgba(0,0,0,0.04)',
         transition: isDragging ? 'none' : 'all 0.2s ease',
       }}
-      onMouseEnter={(e) => {
+      onMouseEnter={() => {
         if (isConnectionMode && onBlockHover) {
           onBlockHover(block.id);
         } else {
           setShowDelete(true);
         }
       }}
-      onMouseLeave={(e) => {
+      onMouseLeave={() => {
         if (isConnectionMode && onBlockHover) {
           onBlockHover(null);
         } else {

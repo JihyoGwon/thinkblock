@@ -50,7 +50,7 @@ export const api = {
       const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/blocks`, block);
       return response.data.block;
     } catch (error) {
-      handleApiError(error, '블록 생성에 실패했습니다.');
+      return handleApiError(error, '블록 생성에 실패했습니다.');
     }
   },
 
@@ -60,7 +60,7 @@ export const api = {
       const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}`, updates);
       return response.data.block;
     } catch (error) {
-      handleApiError(error, '블록 업데이트에 실패했습니다.');
+      return handleApiError(error, '블록 업데이트에 실패했습니다.');
     }
   },
 
@@ -90,7 +90,7 @@ export const api = {
       const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}/categories`, { categories });
       return response.data.categories;
     } catch (error) {
-      handleApiError(error, '카테고리 업데이트에 실패했습니다.');
+      return handleApiError(error, '카테고리 업데이트에 실패했습니다.');
     }
   },
 
@@ -105,7 +105,7 @@ export const api = {
       const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}`);
       return response.data.project;
     } catch (error) {
-      handleApiError(error, '프로젝트 조회에 실패했습니다.');
+      return handleApiError(error, '프로젝트 조회에 실패했습니다.');
     }
   },
 
@@ -114,7 +114,7 @@ export const api = {
       const response = await apiClient.post(`${API_BASE_URL}/api/projects`, { name });
       return response.data.project;
     } catch (error) {
-      handleApiError(error, '프로젝트 생성에 실패했습니다.');
+      return handleApiError(error, '프로젝트 생성에 실패했습니다.');
     }
   },
 
@@ -123,7 +123,7 @@ export const api = {
       const response = await apiClient.put(`${API_BASE_URL}/api/projects/${projectId}`, updates);
       return response.data.project;
     } catch (error) {
-      handleApiError(error, '프로젝트 업데이트에 실패했습니다.');
+      return handleApiError(error, '프로젝트 업데이트에 실패했습니다.');
     }
   },
 
@@ -160,7 +160,7 @@ export const api = {
       });
       return response.data.blocks || [];
     } catch (error) {
-      handleApiError(error, 'AI 블록 생성에 실패했습니다.');
+      return handleApiError(error, 'AI 블록 생성에 실패했습니다.');
     }
   },
 
@@ -176,7 +176,7 @@ export const api = {
       (result as any).reasoning = reasoning;
       return result;
     } catch (error) {
-      handleApiError(error, 'AI 블록 배치에 실패했습니다.');
+      return handleApiError(error, 'AI 블록 배치에 실패했습니다.');
     }
   },
 
@@ -189,7 +189,7 @@ export const api = {
       );
       return response.data.block;
     } catch (error) {
-      handleApiError(error, '의존성 추가에 실패했습니다.');
+      return handleApiError(error, '의존성 추가에 실패했습니다.');
     }
   },
 
@@ -201,7 +201,7 @@ export const api = {
       );
       return response.data.block;
     } catch (error) {
-      handleApiError(error, '의존성 제거에 실패했습니다.');
+      return handleApiError(error, '의존성 제거에 실패했습니다.');
     }
   },
 };

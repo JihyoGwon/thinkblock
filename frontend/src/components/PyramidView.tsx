@@ -364,7 +364,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
         {levels.map((level) => {
           const levelBlocks = blocksByLevel[level] || [];
           const hasBlocks = levelBlocks.length > 0;
-          const levelWidth = getLevelWidth(level);
+          const levelWidth = getLevelWidth();
           const blockCount = levelBlocks.length;
           const isSingleBlock = blockCount === 1;
 

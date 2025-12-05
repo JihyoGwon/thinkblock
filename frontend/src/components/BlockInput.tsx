@@ -7,7 +7,7 @@ interface BlockInputProps {
   projectId?: string; // 향후 사용 예정
 }
 
-export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onAIArrangeClick, projectId }) => {
+export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onAIArrangeClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
   const [title, setTitle] = useState('');
