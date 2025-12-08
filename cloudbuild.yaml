@@ -5,10 +5,18 @@ steps:
     args:
       - '-c'
       - |
-        gcloud artifacts repositories create thinkblock \
-          --repository-format=docker \
+        # 리포지토리가 존재하는지 확인
+        if ! gcloud artifacts repositories describe thinkblock \
           --location=asia-northeast3 \
-          --description="ThinkBlock Docker images" || true
+          --format="value(name)" 2>/dev/null; then
+          # 존재하지 않으면 생성
+          gcloud artifacts repositories create thinkblock \
+            --repository-format=docker \
+            --location=asia-northeast3 \
+            --description="ThinkBlock Docker images"
+        else
+          echo "Repository already exists, skipping creation."
+        fi
     id: 'create-repo'
 
   # Docker 이미지 빌드

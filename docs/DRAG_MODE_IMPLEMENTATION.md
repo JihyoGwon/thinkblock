@@ -97,42 +97,6 @@
        const draggedBlock = blocks.find(b => b.id === draggedBlockId);
        if (!draggedBlock) return;
 
-       // 타겟 레벨의 블록들 가져오기 (드래그 중인 블록 제외)
-       const targetLevelBlocks = blocks
-         .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
-         .sort((a, b) => a.order - b.order);
-
-       // 드롭 위치 인덱스 결정
-       // targetIndex가 제공되지 않으면 맨 끝에 추가
-       const insertIndex = targetIndex !== undefined && targetIndex !== null 
-         ? targetIndex 
-         : targetLevelBlocks.length;
-
-       // 새로운 order 값 계산
-       let newOrder: number;
-       if (targetLevelBlocks.length === 0) {
-         // 타겟 레벨에 블록이 없으면 0
-         newOrder = 0;
-       } else if (insertIndex === 0) {
-         // 맨 앞에 삽입: 첫 번째 블록의 order보다 작은 값 (예: 첫 번째 블록 order - 1, 또는 0)
-         newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
-       } else if (insertIndex >= targetLevelBlocks.length) {
-         // 맨 끝에 추가: 마지막 블록의 order + 1
-         newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
-       } else {
-         // 중간에 삽입: 앞 블록과 뒤 블록의 order 사이 값
-         const prevOrder = targetLevelBlocks[insertIndex - 1].order;
-         const nextOrder = targetLevelBlocks[insertIndex].order;
-         // order가 연속된 경우 재조정 필요
-         if (nextOrder - prevOrder <= 1) {
-           // 앞 블록들의 order를 재조정해야 함
-           // 일단 임시로 중간 값 사용하고, 이후 재조정
-           newOrder = prevOrder + 1;
-         } else {
-           newOrder = Math.floor((prevOrder + nextOrder) / 2);
-         }
-       }
-
        // 같은 레벨 내에서 순서 변경인 경우
        if (draggedBlock.level === targetLevel) {
          // 같은 레벨의 모든 블록 가져오기 (드래그 중인 블록 포함)
@@ -144,15 +108,52 @@
          const currentIndex = allLevelBlocks.findIndex(b => b.id === draggedBlockId);
          
          if (currentIndex === -1) {
-           // 드래그 중인 블록을 찾을 수 없으면 에러
            throw new Error('드래그 중인 블록을 찾을 수 없습니다.');
          }
          
+         // calculateDropIndex가 반환하는 인덱스는 드래그 중인 블록을 포함한 blocks 배열 기준
+         let actualInsertIndex: number;
+         if (targetIndex !== undefined && targetIndex !== null) {
+           actualInsertIndex = targetIndex;
+         } else {
+           actualInsertIndex = allLevelBlocks.length;
+         }
+         
+         // targetLevelBlocks 기준으로 insertIndex 계산 (newOrder 계산용)
+         const targetLevelBlocks = allLevelBlocks.filter(b => b.id !== draggedBlockId);
+         let insertIndex: number;
+         if (targetIndex !== undefined && targetIndex !== null) {
+           if (currentIndex < actualInsertIndex) {
+             insertIndex = actualInsertIndex - 1;
+           } else {
+             insertIndex = actualInsertIndex;
+           }
+         } else {
+           insertIndex = targetLevelBlocks.length;
+         }
+         
+         // 새로운 order 값 계산
+         let newOrder: number;
+         if (targetLevelBlocks.length === 0) {
+           newOrder = 0;
+         } else if (insertIndex === 0) {
+           newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
+         } else if (insertIndex >= targetLevelBlocks.length) {
+           newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
+         } else {
+           const prevOrder = targetLevelBlocks[insertIndex - 1].order;
+           const nextOrder = targetLevelBlocks[insertIndex].order;
+           if (nextOrder - prevOrder <= 1) {
+             newOrder = prevOrder + 1;
+           } else {
+             newOrder = Math.floor((prevOrder + nextOrder) / 2);
+           }
+         }
+         
          // 기존 위치보다 앞으로 이동하는 경우
-         if (insertIndex < currentIndex) {
-           // 삽입 위치부터 현재 위치 전까지의 블록들의 order를 +1
+         if (actualInsertIndex < currentIndex) {
            const blocksToUpdate = allLevelBlocks
-             .slice(insertIndex, currentIndex)
+             .slice(actualInsertIndex, currentIndex)
              .map(b => ({ ...b, newOrder: b.order + 1 }));
            
            const updatePromises = [
@@ -162,11 +163,10 @@
              )
            ];
            await Promise.all(updatePromises);
-         } else if (insertIndex > currentIndex) {
+         } else if (actualInsertIndex > currentIndex) {
            // 뒤로 이동하는 경우
-           // 현재 위치 다음부터 삽입 위치 전까지의 블록들의 order를 -1
            const blocksToUpdate = allLevelBlocks
-             .slice(currentIndex + 1, insertIndex)
+             .slice(currentIndex + 1, actualInsertIndex)
              .map(b => ({ ...b, newOrder: b.order - 1 }));
            
            const updatePromises = [
@@ -176,12 +176,42 @@
              )
            ];
            await Promise.all(updatePromises);
-         } else {
-           // 같은 위치에 드롭 (변경 없음)
-           // 아무것도 하지 않음
          }
        } else {
          // 다른 레벨로 이동하는 경우
+         const targetLevelBlocks = blocks
+           .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
+           .sort((a, b) => a.order - b.order);
+
+         // calculateDropIndex가 반환하는 인덱스는 해당 레벨의 blocks 배열 기준
+         // DropZone에 전달되는 blocks는 해당 레벨의 블록만 포함하므로,
+         // targetIndex는 해당 레벨 내에서의 인덱스
+         let insertIndex: number;
+         if (targetIndex !== undefined && targetIndex !== null) {
+           // 범위 체크 추가 (안전성)
+           insertIndex = Math.min(Math.max(0, targetIndex), targetLevelBlocks.length);
+         } else {
+           insertIndex = targetLevelBlocks.length;
+         }
+
+         // 새로운 order 값 계산
+         let newOrder: number;
+         if (targetLevelBlocks.length === 0) {
+           newOrder = 0;
+         } else if (insertIndex === 0) {
+           newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
+         } else if (insertIndex >= targetLevelBlocks.length) {
+           newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
+         } else {
+           const prevOrder = targetLevelBlocks[insertIndex - 1].order;
+           const nextOrder = targetLevelBlocks[insertIndex].order;
+           if (nextOrder - prevOrder <= 1) {
+             newOrder = prevOrder + 1;
+           } else {
+             newOrder = Math.floor((prevOrder + nextOrder) / 2);
+           }
+         }
+         
          // 삽입 위치 이후의 블록들의 order를 +1
          const blocksToUpdate = targetLevelBlocks
            .slice(insertIndex)
@@ -196,7 +226,7 @@
          await Promise.all(updatePromises);
        }
 
-       await fetchBlocks();
+       // fetchBlocks() 호출 제거 - updateBlock이 이미 로컬 상태를 업데이트하므로 불필요
      } catch (error) {
        handleError(error, '블록 이동에 실패했습니다.');
      } finally {
@@ -204,7 +234,7 @@
        setDragOverLevel(null);
        setDragOverIndex(null);
      }
-   }, [draggedBlockId, mode, blocks, updateBlock, fetchBlocks]);
+   }, [draggedBlockId, mode, blocks, updateBlock]);
    ```
 
 **주의사항**:
@@ -368,28 +398,122 @@
      if (!blocks || blocks.length === 0) return 0;
      
      const dropZoneElement = e.currentTarget as HTMLElement;
-     const dropZoneRect = dropZoneElement.getBoundingClientRect();
+     const mouseX = e.clientX;
      const mouseY = e.clientY;
      
-     // 블록 요소들을 찾아서 위치 계산
-     const blockElements = dropZoneElement.querySelectorAll('[data-block-id]');
+     // 블록 요소들을 찾아서 위치 계산 (드래그 중인 블록 제외)
+     const blockElements = Array.from(dropZoneElement.querySelectorAll('[data-block-id]'))
+       .filter(el => {
+         const blockId = (el as HTMLElement).getAttribute('data-block-id');
+         return blockId !== draggedBlockId;
+       }) as HTMLElement[];
+     
+     if (blockElements.length === 0) return 0;
+     
+     // 블록들을 위치 순서로 정렬 (Y 좌표 우선, 그 다음 X 좌표)
+     const blocksWithIndex = blockElements
+       .map((el) => {
+         const blockId = el.getAttribute('data-block-id');
+         const originalIndex = blocks.findIndex(b => b.id === blockId);
+         const rect = el.getBoundingClientRect();
+         return {
+           element: el,
+           rect,
+           blockId,
+           originalIndex: originalIndex !== -1 ? originalIndex : blocks.length,
+           distanceY: Math.abs(rect.top + rect.height / 2 - mouseY),
+           distanceX: Math.abs(rect.left + rect.width / 2 - mouseX),
+         };
+       })
+       .sort((a, b) => {
+         // 같은 줄에 있는지 확인 (Y 좌표 차이가 작으면 같은 줄)
+         const sameRowA = a.distanceY < a.rect.height;
+         const sameRowB = b.distanceY < b.rect.height;
+         
+         if (sameRowA && !sameRowB) return -1;
+         if (!sameRowA && sameRowB) return 1;
+         
+         // 같은 줄이면 X 좌표로 정렬, 다른 줄이면 Y 좌표로 정렬
+         if (sameRowA && sameRowB) {
+           return a.rect.left - b.rect.left;
+         } else {
+           return a.rect.top - b.rect.top;
+         }
+       });
+     
      let insertIndex = blocks.length; // 기본값: 맨 끝
      
-     for (let i = 0; i < blockElements.length; i++) {
-       const blockElement = blockElements[i] as HTMLElement;
-       const blockRect = blockElement.getBoundingClientRect();
+     // 마우스 위치를 기반으로 삽입 위치 찾기
+     for (let i = 0; i < blocksWithIndex.length; i++) {
+       const blockRect = blocksWithIndex[i].rect;
+       const blockCenterX = blockRect.left + blockRect.width / 2;
        const blockCenterY = blockRect.top + blockRect.height / 2;
        
-       // 마우스가 블록의 위쪽 절반에 있으면 그 앞에 삽입
-       if (mouseY < blockCenterY) {
-         insertIndex = i;
-         break;
+       // 마우스가 블록과 같은 줄에 있는지 확인 (Y 좌표 차이가 블록 높이의 절반 이하)
+       const isSameRow = Math.abs(mouseY - blockCenterY) < blockRect.height / 2;
+       
+       if (isSameRow) {
+         // 같은 줄에 있으면 X 좌표로 판단
+         if (mouseX < blockRect.left) {
+           // 마우스가 블록의 왼쪽 경계 전에 있으면 그 앞에 삽입
+           insertIndex = blocksWithIndex[i].originalIndex;
+           break;
+         } else if (mouseX <= blockRect.right) {
+           // 마우스가 블록 안에 있으면
+           if (mouseX < blockCenterX) {
+             // 블록의 왼쪽 절반에 있으면 그 앞에 삽입
+             insertIndex = blocksWithIndex[i].originalIndex;
+             break;
+           } else {
+             // 블록의 오른쪽 절반에 있으면 그 뒤에 삽입
+             if (i < blocksWithIndex.length - 1) {
+               const nextBlock = blocksWithIndex[i + 1];
+               const nextBlockRect = nextBlock.rect;
+               const isNextSameRow = Math.abs(mouseY - (nextBlockRect.top + nextBlockRect.height / 2)) < nextBlockRect.height / 2;
+               
+               if (isNextSameRow && mouseX > blockRect.right) {
+                 // 다음 블록도 같은 줄에 있고 마우스가 현재 블록 오른쪽 경계 밖에 있으면 다음 블록 앞에 삽입
+                 insertIndex = nextBlock.originalIndex;
+                 break;
+               } else {
+                 // 다음 블록이 다른 줄이거나 마우스가 블록 안에 있으면 현재 블록 뒤에 삽입
+                 insertIndex = blocksWithIndex[i].originalIndex + 1;
+                 break;
+               }
+             } else {
+               // 마지막 블록이면 그 뒤에 삽입
+               insertIndex = blocksWithIndex[i].originalIndex + 1;
+               break;
+             }
+           }
+         }
+       }
+     }
+     
+     // 마우스가 모든 블록보다 오른쪽에 있고 같은 줄에 있으면 맨 끝
+     if (insertIndex === blocks.length && blocksWithIndex.length > 0) {
+       const lastRowBlocks = blocksWithIndex.filter(b => {
+         const blockCenterY = b.rect.top + b.rect.height / 2;
+         return Math.abs(mouseY - blockCenterY) < b.rect.height / 2;
+       });
+       
+       if (lastRowBlocks.length > 0) {
+         const rightmostBlock = lastRowBlocks[lastRowBlocks.length - 1];
+         if (mouseX > rightmostBlock.rect.right) {
+           insertIndex = rightmostBlock.originalIndex + 1;
+         }
        }
      }
      
      return insertIndex;
    };
    ```
+   
+**주의사항**:
+- 블록들이 가로로 배치되어 있으므로 X 좌표를 기준으로 삽입 위치 계산
+- 다중 행 레이아웃을 지원하기 위해 Y 좌표로 같은 줄 판단
+- 블록의 왼쪽 경계(`blockRect.left`)를 고려하여 정확한 삽입 위치 계산
+- 드래그 중인 블록은 계산에서 제외
 
 2. 드롭 이벤트 핸들러 추가
    ```typescript
@@ -435,6 +559,10 @@
 **주의사항**:
 - `onDragOver`에서 `preventDefault()` 필수 (기본 동작이 드롭을 막음)
 - `handleDragLeave`에서 자식 요소로의 이동은 무시해야 함 (깜빡임 방지)
+- 블록들이 가로로 배치되어 있으므로 X 좌표를 기준으로 삽입 위치 계산
+- 다중 행 레이아웃을 지원하기 위해 Y 좌표로 같은 줄 판단
+- 블록의 왼쪽 경계(`blockRect.left`)를 고려하여 정확한 삽입 위치 계산
+- 드래그 중인 블록은 계산에서 제외
 
 ---
 
@@ -487,9 +615,23 @@
    />
    ```
 
+4. 삽입 인디케이터 렌더링
+   - 드래그 모드에서 드롭 위치를 시각적으로 표시
+   - 블록 앞/뒤에 세로 인디케이터 표시
+   - 빈 레벨에 가로 인디케이터 표시
+   ```typescript
+   {isDragMode && 
+    dragOverLevel === level && 
+    dragOverIndex === index && 
+    draggedBlockId !== block.id && (
+     <InsertionIndicator type="vertical" position="before" />
+   )}
+   ```
+
 **주의사항**:
 - 연결선 모드와 드래그 모드가 동시에 활성화되지 않도록 보장
 - 드래그 모드일 때 연결선 렌더링 스킵 (성능 최적화)
+- 삽입 인디케이터는 드래그 중인 블록이 아닐 때만 표시
 
 ---
 
@@ -609,10 +751,16 @@
    - `useCallback`으로 이벤트 핸들러 메모이제이션
    - `useMemo`로 계산된 값 캐싱
    - 드래그 중인 블록만 opacity 변경
+   - `fetchBlocks()` 호출 제거 - `updateBlock`이 이미 로컬 상태를 업데이트
 
 2. **드래그 모드 최적화**
    - 드래그 모드일 때 연결선 렌더링 스킵
    - 드래그 중 불필요한 애니메이션 비활성화
+
+3. **드롭 위치 계산 최적화**
+   - 블록의 왼쪽 경계(`blockRect.left`)를 고려하여 정확한 삽입 위치 계산
+   - 다중 행 레이아웃 지원 (Y 좌표로 같은 줄 판단)
+   - X 좌표 기반 삽입 위치 계산 (가로 배치 블록)
 
 #### 10.3 접근성 개선
 1. 키보드 접근성 (선택사항)

@@ -32,7 +32,7 @@ ThinkBlock은 프론트엔드(React)와 백엔드(FastAPI)로 구성된 풀스�
 - **프레임워크**: React 18+ with TypeScript
 - **빌드 도구**: Vite
 - **라우팅**: react-router-dom
-- **드래그 앤 드롭**: @dnd-kit/core, @dnd-kit/sortable
+- **드래그 앤 드롭**: HTML5 Drag and Drop API
 - **HTTP 클라이언트**: Axios
 
 ### 컴포넌트 구조
@@ -78,6 +78,12 @@ App.tsx (루트 컴포넌트)
 - project: { id, name }              // 현재 프로젝트 정보
 - activeTab: number                  // 현재 활성 탭 (0: 피라미드, 1: 테이블)
 - arrangementReasoning: string        // AI 배치 이유
+- mode: 'view' | 'connection' | 'drag'  // 현재 모드
+- draggedBlockId: string | null      // 드래그 중인 블록 ID
+- dragOverLevel: number | null       // 드롭 오버 중인 레벨
+- dragOverIndex: number | null       // 드롭 위치 인덱스
+- connectingFromBlockId: string | null  // 연결 시작 블록 ID
+- hoveredBlockId: string | null      // 호버된 블록 ID
 ```
 
 ### 데이터 흐름
@@ -100,10 +106,14 @@ App.tsx (루트 컴포넌트)
 
 3. **드래그 앤 드롭**
    ```
-   사용자 드래그 → DndContext 이벤트
-   → handleDragEnd 호출
+   드래그 모드 활성화 → Block 컴포넌트 draggable=true
+   → 사용자 드래그 시작 → handleDragStart
+   → 드래그 오버 → DropZone.handleDragOver
+   → calculateDropIndex로 삽입 위치 계산
+   → 삽입 인디케이터 표시
+   → 드롭 → handleDrop 호출
    → 레벨/순서 계산 → API 호출
-   → Firestore 업데이트 → 상태 동기화
+   → Firestore 업데이트 → 로컬 상태 동기화
    ```
 
 ## 백엔드 아키텍처
@@ -275,7 +285,10 @@ projects/
 ### 프론트엔드
 - React.memo를 통한 불필요한 리렌더링 방지
 - useMemo를 통한 계산 결과 캐싱
-- 드래그 앤 드롭 최적화 (@dnd-kit)
+- useCallback을 통한 이벤트 핸들러 메모이제이션
+- 드래그 모드일 때 연결선 렌더링 스킵 (성능 최적화)
+- 드롭 위치 계산 최적화 (마우스 위치 기반 정확한 삽입 위치 계산)
+- updateBlock이 로컬 상태를 업데이트하므로 fetchBlocks 호출 제거
 
 ### 백엔드
 - Firestore 쿼리 최적화 (인덱스 사용)
