@@ -247,5 +247,35 @@ export const api = {
       return colors;
     }
   },
+
+  // 카테고리 색상 맵 조회
+  getCategoryColors: async (projectId: string): Promise<Record<string, { bg: string; text: string }>> => {
+    try {
+      const response = await apiClient.get(
+        `${API_BASE_URL}/api/projects/${projectId}/category-colors`
+      );
+      return response.data.colors || {};
+    } catch (error) {
+      console.error('카테고리 색상 조회 실패:', error);
+      return {};
+    }
+  },
+
+  // 카테고리 색상 맵 업데이트
+  updateCategoryColors: async (
+    projectId: string,
+    colors: Record<string, { bg: string; text: string }>
+  ): Promise<Record<string, { bg: string; text: string }>> => {
+    try {
+      const response = await apiClient.put(
+        `${API_BASE_URL}/api/projects/${projectId}/category-colors`,
+        { colors }
+      );
+      return response.data.colors || {};
+    } catch (error) {
+      console.error('카테고리 색상 업데이트 실패:', error);
+      return colors;
+    }
+  },
 };
 

@@ -8,6 +8,7 @@ interface TableViewProps {
   maxLevel: number;
   onBlockEdit: (block: BlockType) => void;
   onBlockDelete: (blockId: string) => void;
+  categoryColors?: Record<string, { bg: string; text: string }>; // 카테고리 색상 맵
 }
 
 export const TableView: React.FC<TableViewProps> = ({
@@ -15,6 +16,7 @@ export const TableView: React.FC<TableViewProps> = ({
   maxLevel,
   onBlockEdit,
   onBlockDelete,
+  categoryColors,
 }) => {
   // 레벨별로 정렬 (낮은 레벨부터 - 피라미드와 동일하게)
   const sortedBlocks = [...blocks].sort((a, b) => {
@@ -196,7 +198,7 @@ export const TableView: React.FC<TableViewProps> = ({
                     }}
                   >
                     {block.category ? (() => {
-                      const categoryColor = getCategoryColor(block.category);
+                      const categoryColor = getCategoryColor(block.category, categoryColors);
                       return (
                         <span
                           style={{

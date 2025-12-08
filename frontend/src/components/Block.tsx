@@ -17,6 +17,7 @@ interface BlockProps {
   draggedBlockId?: string | null; // 드래그 중인 블록 ID
   onDragStart?: (blockId: string) => void;
   onDragEnd?: () => void;
+  categoryColors?: Record<string, { bg: string; text: string }>; // 카테고리 색상 맵
 }
 
 export const Block: React.FC<BlockProps> = ({ 
@@ -33,6 +34,7 @@ export const Block: React.FC<BlockProps> = ({
   draggedBlockId = null,
   onDragStart,
   onDragEnd,
+  categoryColors,
 }) => {
   const style = {
     position: 'relative' as const,
@@ -47,7 +49,7 @@ export const Block: React.FC<BlockProps> = ({
   const [isDragging, setIsDragging] = React.useState(false);
   
   // 카테고리 색상 가져오기
-  const categoryColor = block.category ? getCategoryColor(block.category) : null;
+  const categoryColor = block.category ? getCategoryColor(block.category, categoryColors) : null;
 
   // 드래그 이벤트 핸들러
   const handleDragStart = (e: React.DragEvent) => {

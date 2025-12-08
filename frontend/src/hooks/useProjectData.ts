@@ -5,6 +5,7 @@ import { DEFAULT_CATEGORIES } from '../constants/categories';
 
 export const useProjectData = (projectId: string | undefined) => {
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoryColors, setCategoryColors] = useState<Record<string, { bg: string; text: string }>>({});
   const [project, setProject] = useState<{ id: string; name: string; arrangement_reasoning?: string } | null>(null);
   const [arrangementReasoning, setArrangementReasoning] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -14,12 +15,14 @@ export const useProjectData = (projectId: string | undefined) => {
     
     try {
       setLoading(true);
-      const [categoriesData, projectData] = await Promise.all([
+      const [categoriesData, categoryColorsData, projectData] = await Promise.all([
         api.getCategories(projectId),
+        api.getCategoryColors(projectId),
         api.getProject(projectId),
       ]);
       
       setCategories(categoriesData.length > 0 ? categoriesData : [...DEFAULT_CATEGORIES]);
+      setCategoryColors(categoryColorsData || {});
       setProject(projectData);
       
       if (projectData?.arrangement_reasoning) {
@@ -28,6 +31,7 @@ export const useProjectData = (projectId: string | undefined) => {
     } catch (error) {
       console.error('프로젝트 데이터 로드 실패:', error);
       setCategories([...DEFAULT_CATEGORIES]);
+      setCategoryColors({});
       handleError(error, '프로젝트 데이터 로드에 실패했습니다.');
     } finally {
       setLoading(false);
@@ -41,6 +45,17 @@ export const useProjectData = (projectId: string | undefined) => {
       setCategories(newCategories);
     } catch (error) {
       handleError(error, '카테고리 업데이트에 실패했습니다.');
+      throw error;
+    }
+  }, [projectId]);
+
+  const updateCategoryColors = useCallback(async (newColors: Record<string, { bg: string; text: string }>) => {
+    if (!projectId) return;
+    try {
+      await api.updateCategoryColors(projectId, newColors);
+      setCategoryColors(newColors);
+    } catch (error) {
+      handleError(error, '카테고리 색상 업데이트에 실패했습니다.');
       throw error;
     }
   }, [projectId]);
@@ -63,11 +78,13 @@ export const useProjectData = (projectId: string | undefined) => {
 
   return {
     categories,
+    categoryColors,
     project,
     arrangementReasoning,
     loading,
     setArrangementReasoning,
     updateCategories,
+    updateCategoryColors,
     updateProject,
     refetch: fetchProjectData,
   };

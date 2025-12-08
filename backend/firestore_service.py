@@ -200,6 +200,28 @@ def remove_dependency_color(project_id: str, from_block_id: str, to_block_id: st
         doc_ref.set({"colors": colors})
     return colors
 
+# 카테고리 색상 관련 함수
+CATEGORY_COLORS_DOC_ID = "category_colors"
+
+def get_category_colors(project_id: str) -> dict:
+    """프로젝트의 카테고리 색상 맵 조회
+    Returns:
+        dict: {category_name: {bg: string, text: string}} 형태의 딕셔너리
+    """
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(CATEGORY_COLORS_DOC_ID)
+    doc = doc_ref.get()
+    
+    if doc.exists:
+        data = doc.to_dict()
+        return data.get("colors", {})
+    return {}
+
+def update_category_colors(project_id: str, colors: dict) -> dict:
+    """카테고리 색상 맵 업데이트"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(CATEGORY_COLORS_DOC_ID)
+    doc_ref.set({"colors": colors})
+    return colors
+
 def get_connection_color_palette(project_id: str) -> List[str]:
     """프로젝트의 연결선 색상 팔레트 조회"""
     doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document("connection_color_palette")

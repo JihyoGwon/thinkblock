@@ -110,6 +110,19 @@ class MemoryStore:
         self.project_metadata[project_id]["connection_color_palette"] = colors
         return colors
     
+    def get_category_colors(self, project_id: str) -> Dict[str, Dict[str, str]]:
+        """카테고리 색상 맵 조회"""
+        if project_id not in self.project_metadata:
+            return {}
+        return self.project_metadata[project_id].get("category_colors", {})
+    
+    def update_category_colors(self, project_id: str, colors: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, str]]:
+        """카테고리 색상 맵 업데이트"""
+        if project_id not in self.project_metadata:
+            self.project_metadata[project_id] = {}
+        self.project_metadata[project_id]["category_colors"] = colors
+        return colors.copy()
+    
     def create_project(self, project_name: str) -> dict:
         """새 프로젝트 생성"""
         from datetime import datetime

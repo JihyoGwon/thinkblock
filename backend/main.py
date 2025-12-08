@@ -29,6 +29,8 @@ else:
         get_dependency_colors,
         update_dependency_color,
         remove_dependency_color,
+        get_category_colors,
+        update_category_colors,
         get_connection_color_palette,
         update_connection_color_palette,
         create_project,
@@ -273,6 +275,30 @@ async def update_connection_color_palette_endpoint(project_id: str, palette_upda
         return {"colors": updated_colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"연결선 색상 팔레트 업데이트 실패: {str(e)}")
+
+# 카테고리 색상 관련 API
+class CategoryColorsUpdate(BaseModel):
+    colors: dict  # {category_name: {bg: string, text: string}}
+
+@app.get("/api/projects/{project_id}/category-colors")
+async def get_category_colors_endpoint(project_id: str):
+    """프로젝트의 카테고리 색상 맵 조회"""
+    try:
+        func = _get_store_func("get_category_colors")
+        colors = func(project_id)
+        return {"colors": colors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"카테고리 색상 조회 실패: {str(e)}")
+
+@app.put("/api/projects/{project_id}/category-colors")
+async def update_category_colors_endpoint(project_id: str, colors_update: CategoryColorsUpdate):
+    """프로젝트의 카테고리 색상 맵 업데이트"""
+    try:
+        func = _get_store_func("update_category_colors")
+        updated_colors = func(project_id, colors_update.colors)
+        return {"colors": updated_colors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"카테고리 색상 업데이트 실패: {str(e)}")
 
 # 프로젝트 관련 API
 @app.post("/api/projects")

@@ -32,6 +32,7 @@ interface PyramidViewProps {
   // 연결선 색상 관련 props
   selectedConnectionColor?: string | null;
   dependencyColors?: Record<string, string>; // {fromBlockId_toBlockId: color}
+  categoryColors?: Record<string, { bg: string; text: string }>; // 카테고리 색상 맵
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
@@ -59,6 +60,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   onDrop,
   selectedConnectionColor = null,
   dependencyColors = {},
+  categoryColors,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<{ [blockId: string]: HTMLDivElement | null }>({});
@@ -174,7 +176,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           strokeColor = dependencyColor;
         } else {
           // 카테고리 색상 가져오기 - 연결선은 더 진하게 표시
-          const categoryColor = block.category ? getCategoryColor(block.category) : null;
+          const categoryColor = block.category ? getCategoryColor(block.category, categoryColors) : null;
           strokeColor = categoryColor ? categoryColor.bg : '#6366f1';
           // hex 색상을 더 진하게 만들기 (간단한 방법: RGB 값 감소)
           if (strokeColor.startsWith('#')) {
@@ -312,7 +314,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
         const toY = toRect.top - containerRect.top;
 
         const fromBlock = allBlocks.find(b => b.id === connectingFromBlockId);
-        const categoryColor = fromBlock?.category ? getCategoryColor(fromBlock.category) : null;
+        const categoryColor = fromBlock?.category ? getCategoryColor(fromBlock.category, categoryColors) : null;
         const baseColor = categoryColor ? categoryColor.text : '#6366f1';
         // 연결선용으로 더 진하게 조정
         const strokeColor = darkenColorForConnection(baseColor, 20);
@@ -540,6 +542,7 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                           draggedBlockId={draggedBlockId}
                           onDragStart={onDragStart}
                           onDragEnd={onDragEnd}
+                          categoryColors={categoryColors}
                         />
                       </React.Fragment>
                     ))}

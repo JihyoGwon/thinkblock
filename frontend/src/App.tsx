@@ -29,11 +29,13 @@ function App() {
   const { blocks, loading, createBlock, updateBlock, deleteBlock, fetchBlocks } = useBlocks(projectId);
   const {
     categories,
+    categoryColors,
     project,
     arrangementReasoning,
     loading: projectLoading,
     setArrangementReasoning,
     updateCategories,
+    updateCategoryColors,
     updateProject,
   } = useProjectData(projectId);
   
@@ -845,6 +847,7 @@ function App() {
                  connectingFromBlockId={connectingFromBlockId}
                  hoveredBlockId={hoveredBlockId}
                  onConnectionStart={handleConnectionStart}
+                 categoryColors={categoryColors}
                  onConnectionEnd={handleConnectionEnd}
                  onConnectionCancel={handleConnectionCancel}
                  onBlockHover={setHoveredBlockId}
@@ -917,6 +920,7 @@ function App() {
                 maxLevel={maxLevel}
                 onBlockDelete={handleDeleteBlock}
                 onBlockEdit={handleEditBlock}
+                categoryColors={categoryColors}
               />
             </div>
           </div>
@@ -954,7 +958,9 @@ function App() {
           />
           <CategoryManager
             categories={categories}
+            categoryColors={categoryColors}
             onCategoriesChange={handleCategoriesChange}
+            onCategoryColorsChange={updateCategoryColors}
             onClose={() => setShowCategoryManager(false)}
           />
         </>
