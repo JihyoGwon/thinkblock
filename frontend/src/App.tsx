@@ -275,11 +275,18 @@ function App() {
           .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
           .sort((a, b) => a.order - b.order);
 
-        // 드롭 위치 인덱스 결정
-        // targetIndex가 제공되지 않으면 맨 끝에 추가
-        const insertIndex = targetIndex !== undefined && targetIndex !== null 
-          ? targetIndex 
-          : targetLevelBlocks.length;
+        // calculateDropIndex가 반환하는 인덱스는 해당 레벨의 blocks 배열 기준
+        // DropZone에 전달되는 blocks는 해당 레벨의 블록만 포함하므로,
+        // targetIndex는 해당 레벨 내에서의 인덱스
+        // targetLevelBlocks도 동일한 레벨의 블록만 포함하므로, targetIndex를 그대로 사용 가능
+        let insertIndex: number;
+        if (targetIndex !== undefined && targetIndex !== null) {
+          // targetIndex는 해당 레벨의 blocks 배열 기준 (드래그 중인 블록 제외)
+          // targetLevelBlocks도 동일하므로 그대로 사용
+          insertIndex = Math.min(Math.max(0, targetIndex), targetLevelBlocks.length);
+        } else {
+          insertIndex = targetLevelBlocks.length;
+        }
 
         // 새로운 order 값 계산
         let newOrder: number;
@@ -300,6 +307,7 @@ function App() {
         }
         
         // 삽입 위치 이후의 블록들의 order를 +1
+        // newOrder보다 크거나 같은 order를 가진 블록들만 업데이트 (중복 업데이트 방지)
         const blocksToUpdate = targetLevelBlocks
           .slice(insertIndex)
           .filter(b => b.order >= newOrder);

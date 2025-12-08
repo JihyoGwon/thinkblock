@@ -88,31 +88,38 @@ export const DropZone: React.FC<DropZoneProps> = ({
       
       if (isSameRow) {
         // 같은 줄에 있으면 X 좌표로 판단
-        if (mouseX < blockCenterX) {
-          // 마우스가 블록의 왼쪽 절반에 있으면 그 앞에 삽입
+        if (mouseX < blockRect.left) {
+          // 마우스가 블록의 왼쪽 경계 전에 있으면 그 앞에 삽입
           insertIndex = blocksWithIndex[i].originalIndex;
           break;
         } else if (mouseX <= blockRect.right) {
-          // 마우스가 블록의 오른쪽 절반에 있으면 그 뒤에 삽입
-          // 다음 블록을 찾아서 그 앞에 삽입하거나, 마지막이면 맨 끝에 삽입
-          if (i < blocksWithIndex.length - 1) {
-            const nextBlock = blocksWithIndex[i + 1];
-            const nextBlockRect = nextBlock.rect;
-            const isNextSameRow = Math.abs(mouseY - (nextBlockRect.top + nextBlockRect.height / 2)) < nextBlockRect.height / 2;
-            
-            if (isNextSameRow && mouseX > blockRect.right) {
-              // 다음 블록도 같은 줄에 있고 마우스가 현재 블록 오른쪽에 있으면 다음 블록 앞에 삽입
-              insertIndex = nextBlock.originalIndex;
-              break;
+          // 마우스가 블록 안에 있으면
+          if (mouseX < blockCenterX) {
+            // 블록의 왼쪽 절반에 있으면 그 앞에 삽입
+            insertIndex = blocksWithIndex[i].originalIndex;
+            break;
+          } else {
+            // 블록의 오른쪽 절반에 있으면 그 뒤에 삽입
+            // 다음 블록을 찾아서 그 앞에 삽입하거나, 마지막이면 맨 끝에 삽입
+            if (i < blocksWithIndex.length - 1) {
+              const nextBlock = blocksWithIndex[i + 1];
+              const nextBlockRect = nextBlock.rect;
+              const isNextSameRow = Math.abs(mouseY - (nextBlockRect.top + nextBlockRect.height / 2)) < nextBlockRect.height / 2;
+              
+              if (isNextSameRow && mouseX > blockRect.right) {
+                // 다음 블록도 같은 줄에 있고 마우스가 현재 블록 오른쪽 경계 밖에 있으면 다음 블록 앞에 삽입
+                insertIndex = nextBlock.originalIndex;
+                break;
+              } else {
+                // 다음 블록이 다른 줄이거나 마우스가 블록 안에 있으면 현재 블록 뒤에 삽입
+                insertIndex = blocksWithIndex[i].originalIndex + 1;
+                break;
+              }
             } else {
-              // 다음 블록이 다른 줄이거나 마우스가 블록 안에 있으면 현재 블록 뒤에 삽입
+              // 마지막 블록이면 그 뒤에 삽입
               insertIndex = blocksWithIndex[i].originalIndex + 1;
               break;
             }
-          } else {
-            // 마지막 블록이면 그 뒤에 삽입
-            insertIndex = blocksWithIndex[i].originalIndex + 1;
-            break;
           }
         }
       }
