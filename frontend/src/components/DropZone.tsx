@@ -19,7 +19,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
   children,
   isDragMode = false,
   dragOverLevel = null,
-  dragOverIndex = null,
+  dragOverIndex: _dragOverIndex = null, // PyramidView에서 인디케이터 렌더링에 사용되지만, 이 컴포넌트에서는 사용하지 않음
   draggedBlockId = null,
   blocks = [],
   onDragOver,
