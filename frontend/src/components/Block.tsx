@@ -254,12 +254,8 @@ export const Block: React.FC<BlockProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                console.log('도형 클릭:', block.id);
                 if (onConnectionStart) {
-                  console.log('onConnectionStart 호출');
                   onConnectionStart(block.id);
-                } else {
-                  console.log('onConnectionStart 없음');
                 }
               }}
               onMouseDown={(e) => {
@@ -336,12 +332,8 @@ export const Block: React.FC<BlockProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                console.log('녹색 도형 클릭 (연결 완료):', block.id);
                 if (onConnectionEnd) {
-                  console.log('onConnectionEnd 호출');
                   onConnectionEnd(block.id);
-                } else {
-                  console.log('onConnectionEnd 없음');
                 }
               }}
               onMouseDown={(e) => {

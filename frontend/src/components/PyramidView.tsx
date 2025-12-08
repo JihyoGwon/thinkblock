@@ -126,11 +126,8 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
 
   // 연결선 그리기 함수
   const renderConnections = () => {
-    console.log('renderConnections 호출:', { containerRect: !!containerRect, isConnectionMode, allBlocksCount: allBlocks.length });
-    
     // 드래그 모드일 때는 연결선 렌더링 스킵 (성능 최적화)
     if (!containerRect || !isConnectionMode || isDragMode) {
-      console.log('조건 불만족:', { containerRect: !!containerRect, isConnectionMode, isDragMode });
       return null;
     }
 
@@ -138,14 +135,11 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
     const definedMarkers = new Set<string>();
     const markers: JSX.Element[] = [];
 
-    console.log('allBlocks:', allBlocks.map(b => ({ id: b.id, dependencies: b.dependencies })));
-
     allBlocks.forEach(block => {
       if (!block.dependencies || block.dependencies.length === 0) return;
 
       const fromElement = blockRefs.current[block.id];
       if (!fromElement) {
-        console.log('fromElement 없음:', block.id);
         return;
       }
 
@@ -350,14 +344,9 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
     }
 
     // 연결 중인 상태이거나 연결선이 있을 때만 SVG 렌더링
-    console.log('연결선 개수:', connections.length, 'connectingFromBlockId:', connectingFromBlockId);
-    
     if (connections.length === 0 && !connectingFromBlockId) {
-      console.log('연결선 없음, SVG 렌더링 안 함');
       return null;
     }
-
-    console.log('SVG 렌더링:', { connectionsCount: connections.length, markersCount: markers.length });
     
     return (
       <svg

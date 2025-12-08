@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { COLORS, MODAL_STYLES, BUTTON_STYLES } from '../constants/styles';
 import { Block } from '../types/block';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface AIArrangeBlocksModalProps {
   projectId: string;
@@ -49,7 +50,7 @@ export const AIArrangeBlocksModal: React.FC<AIArrangeBlocksModalProps> = ({
       setLoading(false);
       // API 응답에서 배치 이유 추출
       const reasoning = (result as any).reasoning || '';
-      console.log('🔍 배치 이유 추출:', reasoning ? `${reasoning.length} 문자` : '없음');
+      logger.debug('배치 이유 추출:', reasoning ? `${reasoning.length} 문자` : '없음');
       onSuccess(reasoning);
       onClose();
     } catch (err: any) {

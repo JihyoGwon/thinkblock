@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { Block, BlockCreate } from '../types/block';
+import { logger } from '../utils/logger';
 
 // 프로덕션에서는 같은 도메인에서 서빙되므로 상대 경로 사용
 const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:8002');
@@ -26,18 +27,16 @@ export const api = {
   // 모든 블록 조회
   getBlocks: async (projectId: string): Promise<Block[]> => {
     try {
-      console.log('API 호출 시도:', `${API_BASE_URL}/api/projects/${projectId}/blocks`);
+      logger.debug('API 호출 시도:', `${API_BASE_URL}/api/projects/${projectId}/blocks`);
       const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}/blocks`);
-      console.log('API 응답:', response.data);
+      logger.debug('API 응답:', response.data);
       return response.data?.blocks || [];
     } catch (error: any) {
-      console.error('API 호출 실패:', error);
-      console.error('에러 코드:', error.code);
-      console.error('에러 메시지:', error.message);
+      logger.error('API 호출 실패:', error);
       
       // 타임아웃이나 연결 실패 시 빈 배열 반환 (로딩 상태 해제를 위해)
       if (error.code === 'ECONNABORTED' || error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
-        console.warn('백엔드 서버에 연결할 수 없습니다. 빈 배열을 반환합니다.');
+        logger.warn('백엔드 서버에 연결할 수 없습니다. 빈 배열을 반환합니다.');
         return [];
       }
       throw error;
@@ -79,7 +78,7 @@ export const api = {
       const response = await apiClient.get(`${API_BASE_URL}/api/projects/${projectId}/categories`);
       return response.data?.categories || [];
     } catch (error) {
-      console.error('카테고리 조회 실패:', error);
+      logger.error('카테고리 조회 실패:', error);
       return [];
     }
   },
@@ -213,7 +212,7 @@ export const api = {
       );
       return response.data.colors || {};
     } catch (error) {
-      console.error('의존성 색상 조회 실패:', error);
+      logger.error('의존성 색상 조회 실패:', error);
       // 에러 발생 시 빈 객체 반환
       return {};
     }
@@ -227,7 +226,7 @@ export const api = {
       );
       return response.data.colors || [];
     } catch (error) {
-      console.error('연결선 색상 팔레트 조회 실패:', error);
+      logger.error('연결선 색상 팔레트 조회 실패:', error);
       // 에러 발생 시 빈 배열 반환 (기본 색상은 App.tsx에서 설정)
       return [];
     }
@@ -242,7 +241,7 @@ export const api = {
       );
       return response.data.colors || [];
     } catch (error) {
-      console.error('연결선 색상 팔레트 업데이트 실패:', error);
+      logger.error('연결선 색상 팔레트 업데이트 실패:', error);
       // 에러 발생 시 입력받은 색상 그대로 반환
       return colors;
     }
@@ -256,7 +255,7 @@ export const api = {
       );
       return response.data.colors || {};
     } catch (error) {
-      console.error('카테고리 색상 조회 실패:', error);
+      logger.error('카테고리 색상 조회 실패:', error);
       return {};
     }
   },
@@ -273,7 +272,7 @@ export const api = {
       );
       return response.data.colors || {};
     } catch (error) {
-      console.error('카테고리 색상 업데이트 실패:', error);
+      logger.error('카테고리 색상 업데이트 실패:', error);
       return colors;
     }
   },

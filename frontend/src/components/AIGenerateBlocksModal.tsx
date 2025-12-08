@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLORS, MODAL_STYLES, BUTTON_STYLES } from '../constants/styles';
 import { api } from '../services/api';
+import { logger } from '../utils/logger';
 
 interface AIGenerateBlocksModalProps {
   projectId: string;
@@ -38,7 +39,7 @@ export const AIGenerateBlocksModal: React.FC<AIGenerateBlocksModalProps> = ({
         additionalInfo.trim()
       );
       
-      console.log('생성된 블록:', blocks);
+      logger.debug('생성된 블록:', blocks);
       
       setLoading(false);
       onSuccess();

@@ -7,6 +7,7 @@ import { api } from '../services/api';
 import { Project } from '../types/common';
 import { Block } from '../types/block';
 import { DEFAULT_CATEGORIES } from '../constants/categories';
+import { logger } from '../utils/logger';
 
 export const useProject = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -47,7 +48,7 @@ export const useProject = () => {
           setLoading(false);
         }
       } catch (error) {
-        console.error('데이터 로드 실패:', error);
+        logger.error('데이터 로드 실패:', error);
         if (!cancelled) {
           setBlocks([]);
           setCategories([...DEFAULT_CATEGORIES]);
@@ -69,7 +70,7 @@ export const useProject = () => {
       const blocksData = await api.getBlocks(projectId);
       setBlocks(Array.isArray(blocksData) ? blocksData : []);
     } catch (error) {
-      console.error('블록 로드 실패:', error);
+      logger.error('블록 로드 실패:', error);
     }
   };
 
@@ -83,7 +84,7 @@ export const useProject = () => {
       }
       return updatedProject;
     } catch (error) {
-      console.error('프로젝트 업데이트 실패:', error);
+      logger.error('프로젝트 업데이트 실패:', error);
       throw error;
     }
   };

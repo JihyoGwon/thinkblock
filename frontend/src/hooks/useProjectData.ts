@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { handleError } from '../utils/errorHandler';
 import { DEFAULT_CATEGORIES } from '../constants/categories';
+import { logger } from '../utils/logger';
 
 export const useProjectData = (projectId: string | undefined) => {
   const [categories, setCategories] = useState<string[]>([]);
@@ -29,7 +30,7 @@ export const useProjectData = (projectId: string | undefined) => {
         setArrangementReasoning(projectData.arrangement_reasoning);
       }
     } catch (error) {
-      console.error('프로젝트 데이터 로드 실패:', error);
+      logger.error('프로젝트 데이터 로드 실패:', error);
       setCategories([...DEFAULT_CATEGORIES]);
       setCategoryColors({});
       handleError(error, '프로젝트 데이터 로드에 실패했습니다.');

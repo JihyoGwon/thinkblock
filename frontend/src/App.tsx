@@ -19,6 +19,7 @@ import { useProjectData } from './hooks/useProjectData';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { CONNECTION_COLOR_PALETTE } from './constants/connectionColors';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
+import { logger } from './utils/logger';
 import './App.css';
 
 function App() {
@@ -95,7 +96,7 @@ function App() {
           try {
             await api.updateConnectionColorPalette(projectId, defaultColor);
           } catch (e) {
-            console.warn('기본 색상 저장 실패 (무시됨):', e);
+            logger.warn('기본 색상 저장 실패 (무시됨):', e);
           }
         } else if (isValidPalette) {
           // DB에 색상이 있고 모두 기본 팔레트에 포함되면 사용자가 추가한 색상들로 간주 (1개든 10개든 모두 표시)
@@ -110,11 +111,11 @@ function App() {
           try {
             await api.updateConnectionColorPalette(projectId, defaultColor);
           } catch (e) {
-            console.warn('기본 색상 저장 실패 (무시됨):', e);
+            logger.warn('기본 색상 저장 실패 (무시됨):', e);
           }
         }
       } catch (error) {
-        console.error('색상 팔레트 로드 실패:', error);
+        logger.error('색상 팔레트 로드 실패:', error);
         // 기본 색상 팔레트 설정 (첫 번째 색상만)
         const defaultColors = [...CONNECTION_COLOR_PALETTE];
         const defaultColor = [defaultColors[0]];
@@ -128,7 +129,7 @@ function App() {
         const colors = await api.getDependencyColors(projectId);
         setDependencyColors(colors || {});
       } catch (error) {
-        console.error('의존성 색상 로드 실패:', error);
+        logger.error('의존성 색상 로드 실패:', error);
         setDependencyColors({});
       }
     };
@@ -428,18 +429,15 @@ function App() {
       setHoveredBlockId(null);
       return;
     }
-    console.log('연결 시작:', blockId);
+    logger.debug('연결 시작:', blockId);
     setConnectingFromBlockId(blockId);
   }, [mode]);
 
   const handleConnectionEnd = useCallback(async (toBlockId: string) => {
-    console.log('handleConnectionEnd 호출:', { mode, connectingFromBlockId, toBlockId, projectId });
     if (mode !== 'connection' || !connectingFromBlockId || !projectId) {
-      console.log('조건 불만족:', { mode, connectingFromBlockId, projectId });
       return;
     }
     if (connectingFromBlockId === toBlockId) {
-      console.log('같은 블록 클릭, 연결 취소');
       setConnectingFromBlockId(null);
       setHoveredBlockId(null);
       return;

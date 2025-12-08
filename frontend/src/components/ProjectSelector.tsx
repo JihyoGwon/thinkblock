@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { COLORS, BUTTON_STYLES } from '../constants/styles';
+import { logger } from '../utils/logger';
 
 interface Project {
   id: string;
@@ -31,7 +32,7 @@ export const ProjectSelector: React.FC = () => {
       const data = await api.getProjects();
       setProjects(data);
     } catch (error) {
-      console.error('프로젝트 로드 실패:', error);
+      logger.error('프로젝트 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,7 @@ export const ProjectSelector: React.FC = () => {
       const project = await api.createProject(newProjectName.trim());
       navigate(`/project/${project.id}`);
     } catch (error) {
-      console.error('프로젝트 생성 실패:', error);
+      logger.error('프로젝트 생성 실패:', error);
       alert('프로젝트 생성에 실패했습니다.');
     }
   };
@@ -57,7 +58,7 @@ export const ProjectSelector: React.FC = () => {
       await api.deleteProject(projectId);
       loadProjects();
     } catch (error) {
-      console.error('프로젝트 삭제 실패:', error);
+      logger.error('프로젝트 삭제 실패:', error);
       alert('프로젝트 삭제에 실패했습니다.');
     }
   };
@@ -84,7 +85,7 @@ export const ProjectSelector: React.FC = () => {
       setDuplicateProjectName('');
       navigate(`/project/${newProject.id}`);
     } catch (error) {
-      console.error('프로젝트 복제 실패:', error);
+      logger.error('프로젝트 복제 실패:', error);
       alert('프로젝트 복제에 실패했습니다.');
     }
   };

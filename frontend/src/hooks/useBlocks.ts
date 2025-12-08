@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Block as BlockType } from '../types/block';
 import { api } from '../services/api';
 import { handleError } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
 
 export const useBlocks = (projectId: string | undefined) => {
   const [blocks, setBlocks] = useState<BlockType[]>([]);
@@ -17,7 +18,7 @@ export const useBlocks = (projectId: string | undefined) => {
       const blocksData = await api.getBlocks(projectId);
       setBlocks(Array.isArray(blocksData) ? blocksData : []);
     } catch (error) {
-      console.error('블록 로드 실패:', error);
+      logger.error('블록 로드 실패:', error);
       setBlocks([]);
       handleError(error, '블록 로드에 실패했습니다.');
     } finally {
