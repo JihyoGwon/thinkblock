@@ -433,30 +433,161 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                   </span>
                 </div>
                 {hasBlocks ? (
-                  <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%' }}>
-                    {levelBlocks.map((block) => (
-                      <Block
-                        key={block.id}
-                        block={block}
-                        onEdit={onBlockEdit}
-                        onDelete={onBlockDelete}
-                        isConnectionMode={isConnectionMode}
-                        connectingFromBlockId={connectingFromBlockId}
-                        hoveredBlockId={hoveredBlockId}
-                        onConnectionStart={onConnectionStart}
-                        onConnectionEnd={onConnectionEnd}
-                        onBlockHover={onBlockHover}
-                        isDragMode={isDragMode}
-                        draggedBlockId={draggedBlockId}
-                        onDragStart={onDragStart}
-                        onDragEnd={onDragEnd}
-                      />
+                  <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%', position: 'relative', alignItems: 'flex-start' }}>
+                    {levelBlocks.map((block, index) => (
+                      <React.Fragment key={block.id}>
+                        {/* 삽입 인디케이터 - 블록 앞에 표시 (세로선) */}
+                        {isDragMode && 
+                         dragOverLevel === level && 
+                         dragOverIndex === index && 
+                         draggedBlockId !== block.id && (
+                          <div
+                            style={{
+                              width: '3px',
+                              minHeight: '60px',
+                              backgroundColor: '#6366f1',
+                              borderRadius: '2px',
+                              marginRight: '4px',
+                              boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                              position: 'relative',
+                              alignSelf: 'stretch',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {/* 위쪽 화살표 */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: '50%',
+                                top: '0',
+                                transform: 'translateX(-50%)',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '5px solid transparent',
+                                borderRight: '5px solid transparent',
+                                borderBottom: '6px solid #6366f1',
+                                filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                              }}
+                            />
+                            {/* 아래쪽 화살표 */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: '50%',
+                                bottom: '0',
+                                transform: 'translateX(-50%)',
+                                width: '0',
+                                height: '0',
+                                borderLeft: '5px solid transparent',
+                                borderRight: '5px solid transparent',
+                                borderTop: '6px solid #6366f1',
+                                filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                              }}
+                            />
+                          </div>
+                        )}
+                        <Block
+                          block={block}
+                          onEdit={onBlockEdit}
+                          onDelete={onBlockDelete}
+                          isConnectionMode={isConnectionMode}
+                          connectingFromBlockId={connectingFromBlockId}
+                          hoveredBlockId={hoveredBlockId}
+                          onConnectionStart={onConnectionStart}
+                          onConnectionEnd={onConnectionEnd}
+                          onBlockHover={onBlockHover}
+                          isDragMode={isDragMode}
+                          draggedBlockId={draggedBlockId}
+                          onDragStart={onDragStart}
+                          onDragEnd={onDragEnd}
+                        />
+                      </React.Fragment>
                     ))}
+                    {/* 삽입 인디케이터 - 맨 끝에 표시 (모든 블록 뒤) */}
+                    {isDragMode && 
+                     dragOverLevel === level && 
+                     dragOverIndex === levelBlocks.length && (
+                      <div
+                        style={{
+                          width: '3px',
+                          minHeight: '60px',
+                          backgroundColor: '#6366f1',
+                          borderRadius: '2px',
+                          marginLeft: '4px',
+                          boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                          position: 'relative',
+                          alignSelf: 'stretch',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {/* 위쪽 화살표 */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '0',
+                            transform: 'translateX(-50%)',
+                            width: '0',
+                            height: '0',
+                            borderLeft: '5px solid transparent',
+                            borderRight: '5px solid transparent',
+                            borderBottom: '6px solid #6366f1',
+                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                          }}
+                        />
+                        {/* 아래쪽 화살표 */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            bottom: '0',
+                            transform: 'translateX(-50%)',
+                            width: '0',
+                            height: '0',
+                            borderLeft: '5px solid transparent',
+                            borderRight: '5px solid transparent',
+                            borderTop: '6px solid #6366f1',
+                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
-                    여기에 블록을 드롭하세요
-                  </span>
+                  <>
+                    {/* 빈 레벨에 드롭 오버 시 인디케이터 표시 */}
+                    {isDragMode && dragOverLevel === level && dragOverIndex === 0 && (
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '3px',
+                          backgroundColor: '#6366f1',
+                          borderRadius: '2px',
+                          margin: '8px 0',
+                          boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                          position: 'relative',
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '0',
+                            height: '0',
+                            borderLeft: '6px solid transparent',
+                            borderRight: '6px solid transparent',
+                            borderTop: '8px solid #6366f1',
+                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                          }}
+                        />
+                      </div>
+                    )}
+                    <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
+                      여기에 블록을 드롭하세요
+                    </span>
+                  </>
                 )}
               </div>
             </DropZone>

@@ -175,42 +175,6 @@ function App() {
       const draggedBlock = blocks.find(b => b.id === draggedBlockId);
       if (!draggedBlock) return;
 
-      // 타겟 레벨의 블록들 가져오기 (드래그 중인 블록 제외)
-      const targetLevelBlocks = blocks
-        .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
-        .sort((a, b) => a.order - b.order);
-
-      // 드롭 위치 인덱스 결정
-      // targetIndex가 제공되지 않으면 맨 끝에 추가
-      const insertIndex = targetIndex !== undefined && targetIndex !== null 
-        ? targetIndex 
-        : targetLevelBlocks.length;
-
-      // 새로운 order 값 계산
-      let newOrder: number;
-      if (targetLevelBlocks.length === 0) {
-        // 타겟 레벨에 블록이 없으면 0
-        newOrder = 0;
-      } else if (insertIndex === 0) {
-        // 맨 앞에 삽입: 첫 번째 블록의 order보다 작은 값 (예: 첫 번째 블록 order - 1, 또는 0)
-        newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
-      } else if (insertIndex >= targetLevelBlocks.length) {
-        // 맨 끝에 추가: 마지막 블록의 order + 1
-        newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
-      } else {
-        // 중간에 삽입: 앞 블록과 뒤 블록의 order 사이 값
-        const prevOrder = targetLevelBlocks[insertIndex - 1].order;
-        const nextOrder = targetLevelBlocks[insertIndex].order;
-        // order가 연속된 경우 재조정 필요
-        if (nextOrder - prevOrder <= 1) {
-          // 앞 블록들의 order를 재조정해야 함
-          // 일단 임시로 중간 값 사용하고, 이후 재조정
-          newOrder = prevOrder + 1;
-        } else {
-          newOrder = Math.floor((prevOrder + nextOrder) / 2);
-        }
-      }
-
       // 같은 레벨 내에서 순서 변경인 경우
       if (draggedBlock.level === targetLevel) {
         // 같은 레벨의 모든 블록 가져오기 (드래그 중인 블록 포함)
@@ -226,11 +190,53 @@ function App() {
           throw new Error('드래그 중인 블록을 찾을 수 없습니다.');
         }
         
+        // calculateDropIndex가 반환하는 인덱스는 드래그 중인 블록을 포함한 blocks 배열 기준
+        // allLevelBlocks도 동일한 순서이므로, targetIndex를 그대로 사용
+        let actualInsertIndex: number;
+        if (targetIndex !== undefined && targetIndex !== null) {
+          actualInsertIndex = targetIndex;
+        } else {
+          actualInsertIndex = allLevelBlocks.length;
+        }
+        
+        // targetLevelBlocks 기준으로 insertIndex 계산 (newOrder 계산용)
+        const targetLevelBlocks = allLevelBlocks.filter(b => b.id !== draggedBlockId);
+        let insertIndex: number;
+        if (targetIndex !== undefined && targetIndex !== null) {
+          // targetIndex는 allLevelBlocks 기준이므로, targetLevelBlocks 기준으로 변환
+          // 드래그 중인 블록이 삽입 위치보다 앞에 있으면, 삽입 위치를 1 감소
+          if (currentIndex < actualInsertIndex) {
+            insertIndex = actualInsertIndex - 1;
+          } else {
+            insertIndex = actualInsertIndex;
+          }
+        } else {
+          insertIndex = targetLevelBlocks.length;
+        }
+        
+        // 새로운 order 값 계산
+        let newOrder: number;
+        if (targetLevelBlocks.length === 0) {
+          newOrder = 0;
+        } else if (insertIndex === 0) {
+          newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
+        } else if (insertIndex >= targetLevelBlocks.length) {
+          newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
+        } else {
+          const prevOrder = targetLevelBlocks[insertIndex - 1].order;
+          const nextOrder = targetLevelBlocks[insertIndex].order;
+          if (nextOrder - prevOrder <= 1) {
+            newOrder = prevOrder + 1;
+          } else {
+            newOrder = Math.floor((prevOrder + nextOrder) / 2);
+          }
+        }
+        
         // 기존 위치보다 앞으로 이동하는 경우
-        if (insertIndex < currentIndex) {
+        if (actualInsertIndex < currentIndex) {
           // 삽입 위치부터 현재 위치 전까지의 블록들의 order를 +1
           const blocksToUpdate = allLevelBlocks
-            .slice(insertIndex, currentIndex)
+            .slice(actualInsertIndex, currentIndex)
             .map(b => ({ ...b, newOrder: b.order + 1 }));
           
           const updatePromises = [
@@ -240,11 +246,15 @@ function App() {
             )
           ];
           await Promise.all(updatePromises);
-        } else if (insertIndex > currentIndex) {
+        } else if (actualInsertIndex > currentIndex) {
           // 뒤로 이동하는 경우
           // 현재 위치 다음부터 삽입 위치 전까지의 블록들의 order를 -1
+          // 예: a(0)를 b(1)와 c(2) 사이에 삽입하려면:
+          // - a의 order를 b와 c 사이 값으로 설정 (newOrder)
+          // - b의 order를 -1 (b가 a 뒤로 밀려남)
+          // - c의 order는 그대로 유지
           const blocksToUpdate = allLevelBlocks
-            .slice(currentIndex + 1, insertIndex)
+            .slice(currentIndex + 1, actualInsertIndex)
             .map(b => ({ ...b, newOrder: b.order - 1 }));
           
           const updatePromises = [
@@ -260,6 +270,35 @@ function App() {
         }
       } else {
         // 다른 레벨로 이동하는 경우
+        // 타겟 레벨의 블록들 가져오기 (드래그 중인 블록 제외)
+        const targetLevelBlocks = blocks
+          .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
+          .sort((a, b) => a.order - b.order);
+
+        // 드롭 위치 인덱스 결정
+        // targetIndex가 제공되지 않으면 맨 끝에 추가
+        const insertIndex = targetIndex !== undefined && targetIndex !== null 
+          ? targetIndex 
+          : targetLevelBlocks.length;
+
+        // 새로운 order 값 계산
+        let newOrder: number;
+        if (targetLevelBlocks.length === 0) {
+          newOrder = 0;
+        } else if (insertIndex === 0) {
+          newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
+        } else if (insertIndex >= targetLevelBlocks.length) {
+          newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
+        } else {
+          const prevOrder = targetLevelBlocks[insertIndex - 1].order;
+          const nextOrder = targetLevelBlocks[insertIndex].order;
+          if (nextOrder - prevOrder <= 1) {
+            newOrder = prevOrder + 1;
+          } else {
+            newOrder = Math.floor((prevOrder + nextOrder) / 2);
+          }
+        }
+        
         // 삽입 위치 이후의 블록들의 order를 +1
         const blocksToUpdate = targetLevelBlocks
           .slice(insertIndex)
@@ -274,7 +313,8 @@ function App() {
         await Promise.all(updatePromises);
       }
 
-      await fetchBlocks();
+      // fetchBlocks() 호출 제거 - updateBlock이 이미 로컬 상태를 업데이트하므로 불필요
+      // await fetchBlocks();
     } catch (error) {
       handleError(error, '블록 이동에 실패했습니다.');
     } finally {
