@@ -4,6 +4,7 @@ import { Block } from './Block';
 import { DropZone } from './DropZone';
 import { LEVEL_BG_COLORS } from '../constants/block';
 import { getCategoryColor } from '../utils/categoryColors';
+import { darkenColorForConnection } from '../constants/connectionColors';
 
 interface PyramidViewProps {
   blocksByLevel: { [level: number]: BlockType[] };
@@ -312,15 +313,9 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
 
         const fromBlock = allBlocks.find(b => b.id === connectingFromBlockId);
         const categoryColor = fromBlock?.category ? getCategoryColor(fromBlock.category) : null;
-        let strokeColor = categoryColor ? categoryColor.bg : '#6366f1';
-        // hex 색상을 더 진하게 만들기
-        if (strokeColor.startsWith('#')) {
-          const hex = strokeColor.slice(1);
-          const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30);
-          const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30);
-          const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 30);
-          strokeColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-        }
+        const baseColor = categoryColor ? categoryColor.text : '#6366f1';
+        // 연결선용으로 더 진하게 조정
+        const strokeColor = darkenColorForConnection(baseColor, 20);
 
         // 임시 연결선도 곡선으로
         const dx = toX - fromX;

@@ -17,6 +17,7 @@ import { api } from './services/api';
 import { useBlocks } from './hooks/useBlocks';
 import { useProjectData } from './hooks/useProjectData';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
+import { CONNECTION_COLOR_PALETTE } from './constants/connectionColors';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
 import './App.css';
 
@@ -75,28 +76,48 @@ function App() {
     const loadColorPalette = async () => {
       try {
         const colors = await api.getConnectionColorPalette(projectId);
-        // 기존 색상이 있으면 전체 색상 사용, 없으면 기본 색상 1개 설정
-        if (colors.length > 0) {
-          setConnectionColorPalette(colors);
-          setSelectedConnectionColor(colors[0]); // 첫 번째 색상을 기본 선택
-        } else {
-          // 기본 색상 설정 (1개만)
-          const defaultColors = ['#6366f1'];
-          setConnectionColorPalette(defaultColors);
-          setSelectedConnectionColor(defaultColors[0]);
+        // 기본 팔레트 색상 목록
+        const defaultColors = [...CONNECTION_COLOR_PALETTE];
+        
+        // 기존 색상이 기본 팔레트에 포함된 색상들인지 확인
+        const defaultColorsArray = defaultColors as readonly string[];
+        const isValidPalette = colors.length > 0 && 
+          colors.every(color => defaultColorsArray.includes(color));
+        
+        if (colors.length === 0) {
+          // DB에 색상이 없으면 첫 번째 색상만 설정 (처음 사용)
+          const defaultColor = [defaultColors[0]];
+          setConnectionColorPalette(defaultColor);
+          setSelectedConnectionColor(defaultColor[0]);
           // 백엔드에 저장 시도 (실패해도 무시)
           try {
-            await api.updateConnectionColorPalette(projectId, defaultColors);
+            await api.updateConnectionColorPalette(projectId, defaultColor);
+          } catch (e) {
+            console.warn('기본 색상 저장 실패 (무시됨):', e);
+          }
+        } else if (isValidPalette) {
+          // DB에 색상이 있고 모두 기본 팔레트에 포함되면 사용자가 추가한 색상들로 간주 (1개든 10개든 모두 표시)
+          setConnectionColorPalette(colors);
+          setSelectedConnectionColor(colors[0]);
+        } else {
+          // 유효하지 않은 색상이 있으면 첫 번째 색상만 설정
+          const defaultColor = [defaultColors[0]];
+          setConnectionColorPalette(defaultColor);
+          setSelectedConnectionColor(defaultColor[0]);
+          // 백엔드에 저장 시도 (실패해도 무시)
+          try {
+            await api.updateConnectionColorPalette(projectId, defaultColor);
           } catch (e) {
             console.warn('기본 색상 저장 실패 (무시됨):', e);
           }
         }
       } catch (error) {
         console.error('색상 팔레트 로드 실패:', error);
-        // 기본 색상 설정 (1개만)
-        const defaultColors = ['#6366f1'];
-        setConnectionColorPalette(defaultColors);
-        setSelectedConnectionColor(defaultColors[0]);
+        // 기본 색상 팔레트 설정 (첫 번째 색상만)
+        const defaultColors = [...CONNECTION_COLOR_PALETTE];
+        const defaultColor = [defaultColors[0]];
+        setConnectionColorPalette(defaultColor);
+        setSelectedConnectionColor(defaultColor[0]);
       }
     };
 
@@ -470,8 +491,22 @@ function App() {
   }, [projectId]);
 
   // 색상 팔레트 관리 함수
+  const handleColorSelect = useCallback((color: string) => {
+    setSelectedConnectionColor(color);
+  }, []);
+
   const handleColorAdd = useCallback(async (color: string) => {
     if (!projectId) return;
+    
+    // 기본 팔레트에 포함된 색상만 추가 가능
+    if (!CONNECTION_COLOR_PALETTE.includes(color as any)) {
+      return;
+    }
+    
+    // 이미 추가된 색상이면 무시
+    if (connectionColorPalette.includes(color)) {
+      return;
+    }
     
     try {
       const newPalette = [...connectionColorPalette, color];
@@ -483,10 +518,6 @@ function App() {
       handleError(error, '색상 추가에 실패했습니다.');
     }
   }, [projectId, connectionColorPalette]);
-
-  const handleColorSelect = useCallback((color: string) => {
-    setSelectedConnectionColor(color);
-  }, []);
 
   const handleCategoriesChange = async (newCategories: string[]) => {
     try {
@@ -745,10 +776,10 @@ function App() {
         onTabChange={setActiveTab}
         mode={mode}
         onModeChange={handleModeChange}
-        connectionColorPalette={connectionColorPalette}
-        selectedConnectionColor={selectedConnectionColor}
-        onColorSelect={handleColorSelect}
-        onColorAdd={handleColorAdd}
+          connectionColorPalette={connectionColorPalette}
+          selectedConnectionColor={selectedConnectionColor}
+          onColorSelect={handleColorSelect}
+          onColorAdd={handleColorAdd}
       >
         <main
         style={{

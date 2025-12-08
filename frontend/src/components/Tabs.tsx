@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Mode } from '../types/common';
 import { ConnectionColorPalette } from './ConnectionColorPalette';
+import { CONNECTION_COLOR_PALETTE } from '../constants/connectionColors';
 
 interface TabsProps {
   activeTab: number;
@@ -234,8 +235,8 @@ export const Tabs: React.FC<TabsProps> = ({
               <ConnectionColorPalette
                 selectedColor={selectedConnectionColor}
                 onColorSelect={onColorSelect || (() => {})}
-                onColorAdd={onColorAdd || (() => {})}
-                availableColors={connectionColorPalette.length > 0 ? connectionColorPalette : ['#6366f1']}
+                onColorAdd={onColorAdd}
+                availableColors={connectionColorPalette.length > 0 ? connectionColorPalette : [CONNECTION_COLOR_PALETTE[0]]}
               />
             )}
           </div>
