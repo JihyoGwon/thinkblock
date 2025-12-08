@@ -436,52 +436,51 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                   <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%', position: 'relative', alignItems: 'flex-start' }}>
                     {levelBlocks.map((block, index) => (
                       <React.Fragment key={block.id}>
-                        {/* 삽입 인디케이터 - 블록 앞에 표시 (세로선) */}
+                        {/* 삽입 인디케이터 - 블록 앞에 표시 */}
                         {isDragMode && 
                          dragOverLevel === level && 
                          dragOverIndex === index && 
                          draggedBlockId !== block.id && (
                           <div
                             style={{
-                              width: '3px',
+                              width: '2px',
                               minHeight: '60px',
-                              backgroundColor: '#6366f1',
-                              borderRadius: '2px',
-                              marginRight: '4px',
-                              boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                              background: 'linear-gradient(to bottom, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.3))',
+                              borderRadius: '1px',
+                              marginRight: '6px',
+                              boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
                               position: 'relative',
                               alignSelf: 'stretch',
                               flexShrink: 0,
+                              animation: 'pulse-indicator 1.5s ease-in-out infinite',
                             }}
                           >
-                            {/* 위쪽 화살표 */}
+                            {/* 상단 점 */}
                             <div
                               style={{
                                 position: 'absolute',
                                 left: '50%',
-                                top: '0',
+                                top: '4px',
                                 transform: 'translateX(-50%)',
-                                width: '0',
-                                height: '0',
-                                borderLeft: '5px solid transparent',
-                                borderRight: '5px solid transparent',
-                                borderBottom: '6px solid #6366f1',
-                                filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                                width: '6px',
+                                height: '6px',
+                                backgroundColor: '#6366f1',
+                                borderRadius: '50%',
+                                boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
                               }}
                             />
-                            {/* 아래쪽 화살표 */}
+                            {/* 하단 점 */}
                             <div
                               style={{
                                 position: 'absolute',
                                 left: '50%',
-                                bottom: '0',
+                                bottom: '4px',
                                 transform: 'translateX(-50%)',
-                                width: '0',
-                                height: '0',
-                                borderLeft: '5px solid transparent',
-                                borderRight: '5px solid transparent',
-                                borderTop: '6px solid #6366f1',
-                                filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                                width: '6px',
+                                height: '6px',
+                                backgroundColor: '#6366f1',
+                                borderRadius: '50%',
+                                boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
                               }}
                             />
                           </div>
@@ -509,45 +508,44 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                      dragOverIndex === levelBlocks.length && (
                       <div
                         style={{
-                          width: '3px',
+                          width: '2px',
                           minHeight: '60px',
-                          backgroundColor: '#6366f1',
-                          borderRadius: '2px',
-                          marginLeft: '4px',
-                          boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                          background: 'linear-gradient(to bottom, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.3))',
+                          borderRadius: '1px',
+                          marginLeft: '6px',
+                          boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
                           position: 'relative',
                           alignSelf: 'stretch',
                           flexShrink: 0,
+                          animation: 'pulse-indicator 1.5s ease-in-out infinite',
                         }}
                       >
-                        {/* 위쪽 화살표 */}
+                        {/* 상단 점 */}
                         <div
                           style={{
                             position: 'absolute',
                             left: '50%',
-                            top: '0',
+                            top: '4px',
                             transform: 'translateX(-50%)',
-                            width: '0',
-                            height: '0',
-                            borderLeft: '5px solid transparent',
-                            borderRight: '5px solid transparent',
-                            borderBottom: '6px solid #6366f1',
-                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                            width: '6px',
+                            height: '6px',
+                            backgroundColor: '#6366f1',
+                            borderRadius: '50%',
+                            boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
                           }}
                         />
-                        {/* 아래쪽 화살표 */}
+                        {/* 하단 점 */}
                         <div
                           style={{
                             position: 'absolute',
                             left: '50%',
-                            bottom: '0',
+                            bottom: '4px',
                             transform: 'translateX(-50%)',
-                            width: '0',
-                            height: '0',
-                            borderLeft: '5px solid transparent',
-                            borderRight: '5px solid transparent',
-                            borderTop: '6px solid #6366f1',
-                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                            width: '6px',
+                            height: '6px',
+                            backgroundColor: '#6366f1',
+                            borderRadius: '50%',
+                            boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
                           }}
                         />
                       </div>
@@ -560,26 +558,27 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                       <div
                         style={{
                           width: '100%',
-                          height: '3px',
-                          backgroundColor: '#6366f1',
-                          borderRadius: '2px',
-                          margin: '8px 0',
-                          boxShadow: '0 0 8px rgba(99, 102, 241, 0.6)',
+                          height: '2px',
+                          background: 'linear-gradient(to right, rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.3))',
+                          borderRadius: '1px',
+                          margin: '12px 0',
+                          boxShadow: '0 0 12px rgba(99, 102, 241, 0.4)',
                           position: 'relative',
+                          animation: 'pulse-indicator 1.5s ease-in-out infinite',
                         }}
                       >
+                        {/* 중앙 점 */}
                         <div
                           style={{
                             position: 'absolute',
                             left: '50%',
                             top: '50%',
                             transform: 'translate(-50%, -50%)',
-                            width: '0',
-                            height: '0',
-                            borderLeft: '6px solid transparent',
-                            borderRight: '6px solid transparent',
-                            borderTop: '8px solid #6366f1',
-                            filter: 'drop-shadow(0 2px 4px rgba(99, 102, 241, 0.4))',
+                            width: '8px',
+                            height: '8px',
+                            backgroundColor: '#6366f1',
+                            borderRadius: '50%',
+                            boxShadow: '0 0 12px rgba(99, 102, 241, 0.6)',
                           }}
                         />
                       </div>
