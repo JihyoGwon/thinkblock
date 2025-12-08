@@ -181,11 +181,11 @@ export const api = {
   },
 
   // 의존성 추가
-  addDependency: async (projectId: string, blockId: string, dependencyId: string): Promise<Block> => {
+  addDependency: async (projectId: string, blockId: string, dependencyId: string, color?: string): Promise<Block> => {
     try {
       const response = await apiClient.post(
         `${API_BASE_URL}/api/projects/${projectId}/blocks/${blockId}/dependencies`,
-        { dependency_id: dependencyId }
+        { dependency_id: dependencyId, color }
       );
       return response.data.block;
     } catch (error) {
@@ -202,6 +202,49 @@ export const api = {
       return response.data.block;
     } catch (error) {
       return handleApiError(error, '의존성 제거에 실패했습니다.');
+    }
+  },
+
+  // 의존성 색상 맵 조회
+  getDependencyColors: async (projectId: string): Promise<Record<string, string>> => {
+    try {
+      const response = await apiClient.get(
+        `${API_BASE_URL}/api/projects/${projectId}/dependency-colors`
+      );
+      return response.data.colors || {};
+    } catch (error) {
+      console.error('의존성 색상 조회 실패:', error);
+      // 에러 발생 시 빈 객체 반환
+      return {};
+    }
+  },
+
+  // 연결선 색상 팔레트 조회
+  getConnectionColorPalette: async (projectId: string): Promise<string[]> => {
+    try {
+      const response = await apiClient.get(
+        `${API_BASE_URL}/api/projects/${projectId}/connection-color-palette`
+      );
+      return response.data.colors || [];
+    } catch (error) {
+      console.error('연결선 색상 팔레트 조회 실패:', error);
+      // 에러 발생 시 빈 배열 반환 (기본 색상은 App.tsx에서 설정)
+      return [];
+    }
+  },
+
+  // 연결선 색상 팔레트 업데이트
+  updateConnectionColorPalette: async (projectId: string, colors: string[]): Promise<string[]> => {
+    try {
+      const response = await apiClient.put(
+        `${API_BASE_URL}/api/projects/${projectId}/connection-color-palette`,
+        { colors }
+      );
+      return response.data.colors || [];
+    } catch (error) {
+      console.error('연결선 색상 팔레트 업데이트 실패:', error);
+      // 에러 발생 시 입력받은 색상 그대로 반환
+      return colors;
     }
   },
 };

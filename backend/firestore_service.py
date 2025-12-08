@@ -155,6 +155,69 @@ def update_categories(project_id: str, categories: List[str]) -> List[str]:
     doc_ref.set({"categories": categories})
     return categories
 
+# 의존성 색상 관련 함수
+DEPENDENCY_COLORS_DOC_ID = "dependency_colors"
+
+def get_dependency_colors(project_id: str) -> dict:
+    """프로젝트의 의존성 색상 맵 조회
+    Returns:
+        dict: {fromBlockId_toBlockId: color} 형태의 딕셔너리
+    """
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(DEPENDENCY_COLORS_DOC_ID)
+    doc = doc_ref.get()
+    
+    if doc.exists:
+        data = doc.to_dict()
+        return data.get("colors", {})
+    return {}
+
+def update_dependency_color(project_id: str, from_block_id: str, to_block_id: str, color: str) -> dict:
+    """의존성 색상 업데이트"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(DEPENDENCY_COLORS_DOC_ID)
+    doc = doc_ref.get()
+    
+    colors = {}
+    if doc.exists:
+        colors = doc.to_dict().get("colors", {})
+    
+    key = f"{from_block_id}_{to_block_id}"
+    colors[key] = color
+    doc_ref.set({"colors": colors})
+    return colors
+
+def remove_dependency_color(project_id: str, from_block_id: str, to_block_id: str) -> dict:
+    """의존성 색상 제거"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document(DEPENDENCY_COLORS_DOC_ID)
+    doc = doc_ref.get()
+    
+    if not doc.exists:
+        return {}
+    
+    colors = doc.to_dict().get("colors", {})
+    key = f"{from_block_id}_{to_block_id}"
+    if key in colors:
+        del colors[key]
+        doc_ref.set({"colors": colors})
+    return colors
+
+def get_connection_color_palette(project_id: str) -> List[str]:
+    """프로젝트의 연결선 색상 팔레트 조회"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document("connection_color_palette")
+    doc = doc_ref.get()
+    
+    if doc.exists:
+        data = doc.to_dict()
+        colors = data.get("colors", [])
+        return colors if colors else ['#6366f1']
+    # 기본 색상 반환 (1개만)
+    return ['#6366f1']
+
+def update_connection_color_palette(project_id: str, colors: List[str]) -> List[str]:
+    """연결선 색상 팔레트 업데이트"""
+    doc_ref = db.collection(PROJECTS_COLLECTION).document(project_id).collection("metadata").document("connection_color_palette")
+    doc_ref.set({"colors": colors})
+    return colors
+
 # 프로젝트 관련 함수
 def create_project(project_name: str) -> dict:
     """새 프로젝트 생성"""

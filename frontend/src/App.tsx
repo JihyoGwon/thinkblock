@@ -44,6 +44,10 @@ function App() {
   // 연결선 모드 상태
   const [connectingFromBlockId, setConnectingFromBlockId] = useState<string | null>(null); // 연결 시작 블록 ID
   const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null); // 호버된 블록 ID
+  // 연결선 색상 팔레트 상태
+  const [connectionColorPalette, setConnectionColorPalette] = useState<string[]>([]); // 사용 가능한 색상 목록
+  const [selectedConnectionColor, setSelectedConnectionColor] = useState<string | null>(null); // 선택된 색상
+  const [dependencyColors, setDependencyColors] = useState<Record<string, string>>({}); // 의존성 색상 맵 {fromBlockId_toBlockId: color}
   // 드래그 모드 상태
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null); // 드래그 중인 블록 ID
   const [dragOverLevel, setDragOverLevel] = useState<number | null>(null); // 드롭 오버 중인 레벨
@@ -63,6 +67,52 @@ function App() {
       return;
     }
   }, [projectId, navigate]);
+
+  // 연결선 색상 팔레트 로드
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const loadColorPalette = async () => {
+      try {
+        const colors = await api.getConnectionColorPalette(projectId);
+        // 기존 색상이 있으면 전체 색상 사용, 없으면 기본 색상 1개 설정
+        if (colors.length > 0) {
+          setConnectionColorPalette(colors);
+          setSelectedConnectionColor(colors[0]); // 첫 번째 색상을 기본 선택
+        } else {
+          // 기본 색상 설정 (1개만)
+          const defaultColors = ['#6366f1'];
+          setConnectionColorPalette(defaultColors);
+          setSelectedConnectionColor(defaultColors[0]);
+          // 백엔드에 저장 시도 (실패해도 무시)
+          try {
+            await api.updateConnectionColorPalette(projectId, defaultColors);
+          } catch (e) {
+            console.warn('기본 색상 저장 실패 (무시됨):', e);
+          }
+        }
+      } catch (error) {
+        console.error('색상 팔레트 로드 실패:', error);
+        // 기본 색상 설정 (1개만)
+        const defaultColors = ['#6366f1'];
+        setConnectionColorPalette(defaultColors);
+        setSelectedConnectionColor(defaultColors[0]);
+      }
+    };
+
+    const loadDependencyColors = async () => {
+      try {
+        const colors = await api.getDependencyColors(projectId);
+        setDependencyColors(colors || {});
+      } catch (error) {
+        console.error('의존성 색상 로드 실패:', error);
+        setDependencyColors({});
+      }
+    };
+
+    loadColorPalette();
+    loadDependencyColors();
+  }, [projectId]);
 
   const handleCreateBlock = async (blockData: Omit<BlockType, 'id'>) => {
     try {
@@ -372,8 +422,19 @@ function App() {
       return;
     }
     try {
-      await api.addDependency(projectId, connectingFromBlockId, toBlockId);
+      // 선택된 색상이 있으면 색상 정보와 함께 의존성 추가
+      await api.addDependency(projectId, connectingFromBlockId, toBlockId, selectedConnectionColor || undefined);
       await fetchBlocks();
+      
+      // 의존성 색상 맵 업데이트
+      if (selectedConnectionColor) {
+        const colorKey = `${connectingFromBlockId}_${toBlockId}`;
+        setDependencyColors(prev => ({
+          ...prev,
+          [colorKey]: selectedConnectionColor,
+        }));
+      }
+      
       setConnectingFromBlockId(null);
       setHoveredBlockId(null);
     } catch (error) {
@@ -381,7 +442,7 @@ function App() {
       setConnectingFromBlockId(null);
       setHoveredBlockId(null);
     }
-  }, [mode, connectingFromBlockId, projectId]);
+  }, [mode, connectingFromBlockId, projectId, selectedConnectionColor]);
 
   const handleConnectionCancel = useCallback(() => {
     if (mode !== 'connection') return;
@@ -395,10 +456,37 @@ function App() {
     try {
       await api.removeDependency(projectId, fromBlockId, toBlockId);
       await fetchBlocks();
+      
+      // 의존성 색상 맵에서도 제거
+      const colorKey = `${fromBlockId}_${toBlockId}`;
+      setDependencyColors(prev => {
+        const newColors = { ...prev };
+        delete newColors[colorKey];
+        return newColors;
+      });
     } catch (error) {
       handleError(error, '의존성 삭제에 실패했습니다.');
     }
   }, [projectId]);
+
+  // 색상 팔레트 관리 함수
+  const handleColorAdd = useCallback(async (color: string) => {
+    if (!projectId) return;
+    
+    try {
+      const newPalette = [...connectionColorPalette, color];
+      await api.updateConnectionColorPalette(projectId, newPalette);
+      setConnectionColorPalette(newPalette);
+      // 새로 추가된 색상을 자동으로 선택
+      setSelectedConnectionColor(color);
+    } catch (error) {
+      handleError(error, '색상 추가에 실패했습니다.');
+    }
+  }, [projectId, connectionColorPalette]);
+
+  const handleColorSelect = useCallback((color: string) => {
+    setSelectedConnectionColor(color);
+  }, []);
 
   const handleCategoriesChange = async (newCategories: string[]) => {
     try {
@@ -657,6 +745,10 @@ function App() {
         onTabChange={setActiveTab}
         mode={mode}
         onModeChange={handleModeChange}
+        connectionColorPalette={connectionColorPalette}
+        selectedConnectionColor={selectedConnectionColor}
+        onColorSelect={handleColorSelect}
+        onColorAdd={handleColorAdd}
       >
         <main
         style={{
@@ -713,36 +805,38 @@ function App() {
                 backgroundColor: '#ffffff',
               }}
             >
-              <PyramidView
-                blocksByLevel={blocksByLevel}
-                maxLevel={maxLevel}
-                onBlockDelete={handleDeleteBlock}
-                onBlockEdit={handleEditBlock}
-                isConnectionMode={mode === 'connection'}
-                connectingFromBlockId={connectingFromBlockId}
-                hoveredBlockId={hoveredBlockId}
-                onConnectionStart={handleConnectionStart}
-                onConnectionEnd={handleConnectionEnd}
-                onConnectionCancel={handleConnectionCancel}
-                onBlockHover={setHoveredBlockId}
-                onRemoveDependency={handleRemoveDependency}
-                allBlocks={blocks}
-                isDragMode={mode === 'drag'}
-                draggedBlockId={draggedBlockId}
-                dragOverLevel={dragOverLevel}
-                dragOverIndex={dragOverIndex}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragOver={(level, index) => {
-                  setDragOverLevel(level);
-                  setDragOverIndex(index ?? null);
-                }}
-                onDragLeave={() => {
-                  setDragOverLevel(null);
-                  setDragOverIndex(null);
-                }}
-                onDrop={handleDrop}
-              />
+               <PyramidView
+                 blocksByLevel={blocksByLevel}
+                 maxLevel={maxLevel}
+                 onBlockDelete={handleDeleteBlock}
+                 onBlockEdit={handleEditBlock}
+                 isConnectionMode={mode === 'connection'}
+                 connectingFromBlockId={connectingFromBlockId}
+                 hoveredBlockId={hoveredBlockId}
+                 onConnectionStart={handleConnectionStart}
+                 onConnectionEnd={handleConnectionEnd}
+                 onConnectionCancel={handleConnectionCancel}
+                 onBlockHover={setHoveredBlockId}
+                 onRemoveDependency={handleRemoveDependency}
+                 allBlocks={blocks}
+                 isDragMode={mode === 'drag'}
+                 draggedBlockId={draggedBlockId}
+                 dragOverLevel={dragOverLevel}
+                 dragOverIndex={dragOverIndex}
+                 onDragStart={handleDragStart}
+                 onDragEnd={handleDragEnd}
+                 onDragOver={(level, index) => {
+                   setDragOverLevel(level);
+                   setDragOverIndex(index ?? null);
+                 }}
+                 onDragLeave={() => {
+                   setDragOverLevel(null);
+                   setDragOverIndex(null);
+                 }}
+                 onDrop={handleDrop}
+                 selectedConnectionColor={selectedConnectionColor}
+                 dependencyColors={dependencyColors}
+               />
             </div>
           </div>
         ) : (

@@ -28,6 +28,9 @@ interface PyramidViewProps {
   onDragOver?: (level: number, index?: number) => void;
   onDragLeave?: () => void;
   onDrop?: (level: number, index?: number) => void;
+  // 연결선 색상 관련 props
+  selectedConnectionColor?: string | null;
+  dependencyColors?: Record<string, string>; // {fromBlockId_toBlockId: color}
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
@@ -53,6 +56,8 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   onDragOver,
   onDragLeave,
   onDrop,
+  selectedConnectionColor = null,
+  dependencyColors = {},
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<{ [blockId: string]: HTMLDivElement | null }>({});
@@ -153,17 +158,31 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
         const toX = toRect.left + toRect.width / 2 - containerRect.left;
         const toY = toRect.top - containerRect.top;
 
-        // 카테고리 색상 가져오기 - 연결선은 더 진하게 표시
-        const categoryColor = block.category ? getCategoryColor(block.category) : null;
-        // 카테고리 색상을 더 진하게 만들기 (약간 어둡게)
-        let strokeColor = categoryColor ? categoryColor.bg : '#6366f1';
-        // hex 색상을 더 진하게 만들기 (간단한 방법: RGB 값 감소)
-        if (strokeColor.startsWith('#')) {
-          const hex = strokeColor.slice(1);
-          const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30);
-          const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30);
-          const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 30);
-          strokeColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        // 의존성 색상 확인
+        const colorKey = `${block.id}_${depId}`;
+        const dependencyColor = dependencyColors[colorKey];
+        
+        // 선택된 색상이 있고, 이 연결선의 색상이 선택된 색상과 다르면 스킵
+        if (selectedConnectionColor && dependencyColor !== selectedConnectionColor) {
+          return;
+        }
+        
+        // 색상 결정: 의존성 색상 > 카테고리 색상 > 기본 색상
+        let strokeColor: string;
+        if (dependencyColor) {
+          strokeColor = dependencyColor;
+        } else {
+          // 카테고리 색상 가져오기 - 연결선은 더 진하게 표시
+          const categoryColor = block.category ? getCategoryColor(block.category) : null;
+          strokeColor = categoryColor ? categoryColor.bg : '#6366f1';
+          // hex 색상을 더 진하게 만들기 (간단한 방법: RGB 값 감소)
+          if (strokeColor.startsWith('#')) {
+            const hex = strokeColor.slice(1);
+            const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 30);
+            const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 30);
+            const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 30);
+            strokeColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          }
         }
 
         // 마커 ID 생성
@@ -176,12 +195,19 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
               id={markerId}
               markerWidth="6"
               markerHeight="6"
-              refX="5"
-              refY="2"
+              refX="3"
+              refY="3"
               orient="auto"
               markerUnits="strokeWidth"
             >
-              <path d="M0,0 L0,4 L5,2 z" fill={strokeColor} opacity="1" />
+              {/* 작은 원형 마커 */}
+              <circle
+                cx="3"
+                cy="3"
+                r="2"
+                fill={strokeColor}
+                opacity="1"
+              />
             </marker>
           );
         }
@@ -190,22 +216,32 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
         const midY = (fromY + toY) / 2;
         const isHovered = hoveredConnection?.fromId === block.id && hoveredConnection?.toId === depId;
 
+        // 곡선을 위한 제어점 계산 (부드러운 곡선 효과)
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const curvature = Math.min(distance * 0.3, 80); // 곡률 조절
+        
+        // 수직 방향으로 곡선 만들기
+        const controlX1 = fromX;
+        const controlY1 = fromY + curvature;
+
         connections.push(
           <g key={`${block.id}-${depId}`}>
-            {/* 연결선 - 클릭 가능하도록 pointerEvents 추가 */}
-            <line
-              x1={fromX}
-              y1={fromY}
-              x2={toX}
-              y2={toY}
+            {/* 연결선 - 부드러운 곡선으로 변경 */}
+            <path
+              d={`M ${fromX} ${fromY} Q ${controlX1} ${controlY1}, ${midX} ${midY} T ${toX} ${toY}`}
               stroke={strokeColor}
-              strokeWidth="5"
+              strokeWidth="2.5"
+              fill="none"
               markerEnd={`url(#${markerId})`}
               opacity="1"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               style={{ 
                 pointerEvents: 'stroke',
                 cursor: 'pointer',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
               }}
               onMouseEnter={() => setHoveredConnection({ fromId: block.id, toId: depId })}
               onMouseLeave={() => setHoveredConnection(null)}
@@ -286,20 +322,30 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           strokeColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
 
+        // 임시 연결선도 곡선으로
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const curvature = Math.min(distance * 0.3, 80);
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        const controlX1 = fromX;
+        const controlY1 = fromY + curvature;
+        
         connections.push(
-          <line
+          <path
             key="temp-connection"
-            x1={fromX}
-            y1={fromY}
-            x2={toX}
-            y2={toY}
+            d={`M ${fromX} ${fromY} Q ${controlX1} ${controlY1}, ${midX} ${midY} T ${toX} ${toY}`}
             stroke={strokeColor}
-            strokeWidth="5"
+            strokeWidth="2.5"
+            fill="none"
             strokeDasharray="5,5"
             opacity="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
             style={{ 
               pointerEvents: 'none',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
             }}
           />
         );

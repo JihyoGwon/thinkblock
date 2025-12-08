@@ -26,6 +26,11 @@ else:
         delete_block,
         get_categories,
         update_categories,
+        get_dependency_colors,
+        update_dependency_color,
+        remove_dependency_color,
+        get_connection_color_palette,
+        update_connection_color_palette,
         create_project,
         get_project,
         get_all_projects,
@@ -158,6 +163,7 @@ async def delete_block_endpoint(project_id: str, block_id: str):
 
 class DependencyRequest(BaseModel):
     dependency_id: str
+    color: Optional[str] = None  # 연결선 색상 (선택사항)
 
 @app.post("/api/projects/{project_id}/blocks/{block_id}/dependencies")
 async def add_dependency_endpoint(project_id: str, block_id: str, request: DependencyRequest):
@@ -165,6 +171,7 @@ async def add_dependency_endpoint(project_id: str, block_id: str, request: Depen
     try:
         get_block_func = _get_store_func("get_block")
         update_block_func = _get_store_func("update_block")
+        update_dependency_color_func = _get_store_func("update_dependency_color")
         
         block = get_block_func(project_id, block_id)
         if not block:
@@ -174,6 +181,10 @@ async def add_dependency_endpoint(project_id: str, block_id: str, request: Depen
         if request.dependency_id not in dependencies:
             dependencies.append(request.dependency_id)
             update_block_func(project_id, block_id, {"dependencies": dependencies})
+        
+        # 색상이 제공된 경우 의존성 색상 저장
+        if request.color:
+            update_dependency_color_func(project_id, block_id, request.dependency_id, request.color)
         
         updated_block = get_block_func(project_id, block_id)
         return {"block": updated_block}
@@ -188,6 +199,7 @@ async def remove_dependency_endpoint(project_id: str, block_id: str, dependency_
     try:
         get_block_func = _get_store_func("get_block")
         update_block_func = _get_store_func("update_block")
+        remove_dependency_color_func = _get_store_func("remove_dependency_color")
         
         block = get_block_func(project_id, block_id)
         if not block:
@@ -197,6 +209,8 @@ async def remove_dependency_endpoint(project_id: str, block_id: str, dependency_
         if dependency_id in dependencies:
             dependencies.remove(dependency_id)
             update_block_func(project_id, block_id, {"dependencies": dependencies})
+            # 의존성 색상도 제거
+            remove_dependency_color_func(project_id, block_id, dependency_id)
         
         updated_block = get_block_func(project_id, block_id)
         return {"block": updated_block}
@@ -224,6 +238,41 @@ async def update_categories_endpoint(project_id: str, categories_update: Categor
         return {"categories": updated_categories}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 업데이트 실패: {str(e)}")
+
+# 의존성 색상 관련 API
+@app.get("/api/projects/{project_id}/dependency-colors")
+async def get_dependency_colors_endpoint(project_id: str):
+    """프로젝트의 의존성 색상 맵 조회"""
+    try:
+        func = _get_store_func("get_dependency_colors")
+        colors = func(project_id)
+        return {"colors": colors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"의존성 색상 조회 실패: {str(e)}")
+
+# 연결선 색상 팔레트 관련 API
+class ConnectionColorPaletteUpdate(BaseModel):
+    colors: List[str]
+
+@app.get("/api/projects/{project_id}/connection-color-palette")
+async def get_connection_color_palette_endpoint(project_id: str):
+    """프로젝트의 연결선 색상 팔레트 조회"""
+    try:
+        func = _get_store_func("get_connection_color_palette")
+        colors = func(project_id)
+        return {"colors": colors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"연결선 색상 팔레트 조회 실패: {str(e)}")
+
+@app.put("/api/projects/{project_id}/connection-color-palette")
+async def update_connection_color_palette_endpoint(project_id: str, palette_update: ConnectionColorPaletteUpdate):
+    """프로젝트의 연결선 색상 팔레트 업데이트"""
+    try:
+        func = _get_store_func("update_connection_color_palette")
+        updated_colors = func(project_id, palette_update.colors)
+        return {"colors": updated_colors}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"연결선 색상 팔레트 업데이트 실패: {str(e)}")
 
 # 프로젝트 관련 API
 @app.post("/api/projects")

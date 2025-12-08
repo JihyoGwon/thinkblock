@@ -69,6 +69,47 @@ class MemoryStore:
         self.project_metadata[project_id]["categories"] = categories
         return categories
     
+    def get_dependency_colors(self, project_id: str) -> Dict[str, str]:
+        """의존성 색상 맵 조회"""
+        if project_id not in self.project_metadata:
+            return {}
+        return self.project_metadata[project_id].get("dependency_colors", {})
+    
+    def update_dependency_color(self, project_id: str, from_block_id: str, to_block_id: str, color: str) -> Dict[str, str]:
+        """의존성 색상 업데이트"""
+        if project_id not in self.project_metadata:
+            self.project_metadata[project_id] = {}
+        if "dependency_colors" not in self.project_metadata[project_id]:
+            self.project_metadata[project_id]["dependency_colors"] = {}
+        key = f"{from_block_id}_{to_block_id}"
+        self.project_metadata[project_id]["dependency_colors"][key] = color
+        return self.project_metadata[project_id]["dependency_colors"].copy()
+    
+    def remove_dependency_color(self, project_id: str, from_block_id: str, to_block_id: str) -> Dict[str, str]:
+        """의존성 색상 제거"""
+        if project_id not in self.project_metadata:
+            return {}
+        if "dependency_colors" not in self.project_metadata[project_id]:
+            return {}
+        key = f"{from_block_id}_{to_block_id}"
+        if key in self.project_metadata[project_id]["dependency_colors"]:
+            del self.project_metadata[project_id]["dependency_colors"][key]
+        return self.project_metadata[project_id]["dependency_colors"].copy()
+    
+    def get_connection_color_palette(self, project_id: str) -> List[str]:
+        """연결선 색상 팔레트 조회"""
+        if project_id not in self.project_metadata:
+            return ['#6366f1']
+        colors = self.project_metadata[project_id].get("connection_color_palette", ['#6366f1'])
+        return colors if colors else ['#6366f1']
+    
+    def update_connection_color_palette(self, project_id: str, colors: List[str]) -> List[str]:
+        """연결선 색상 팔레트 업데이트"""
+        if project_id not in self.project_metadata:
+            self.project_metadata[project_id] = {}
+        self.project_metadata[project_id]["connection_color_palette"] = colors
+        return colors
+    
     def create_project(self, project_name: str) -> dict:
         """새 프로젝트 생성"""
         from datetime import datetime

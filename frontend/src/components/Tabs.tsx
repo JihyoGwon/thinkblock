@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Mode } from '../types/common';
+import { ConnectionColorPalette } from './ConnectionColorPalette';
 
 interface TabsProps {
   activeTab: number;
@@ -7,9 +8,24 @@ interface TabsProps {
   children: ReactNode;
   mode?: Mode;
   onModeChange?: (mode: Mode) => void;
+  // 연결선 색상 팔레트 관련 props
+  connectionColorPalette?: string[];
+  selectedConnectionColor?: string | null;
+  onColorSelect?: (color: string) => void;
+  onColorAdd?: (color: string) => void;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, mode = 'view', onModeChange }) => {
+export const Tabs: React.FC<TabsProps> = ({ 
+  activeTab, 
+  onTabChange, 
+  children, 
+  mode = 'view', 
+  onModeChange,
+  connectionColorPalette = [],
+  selectedConnectionColor = null,
+  onColorSelect,
+  onColorAdd,
+}) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div
@@ -212,6 +228,16 @@ export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, mo
                 <path d="M5 17A12 12 0 0 1 17 5"/>
               </svg>
             </button>
+            
+            {/* 연결선 색상 팔레트 - 연결선 모드일 때만 표시 */}
+            {mode === 'connection' && (
+              <ConnectionColorPalette
+                selectedColor={selectedConnectionColor}
+                onColorSelect={onColorSelect || (() => {})}
+                onColorAdd={onColorAdd || (() => {})}
+                availableColors={connectionColorPalette.length > 0 ? connectionColorPalette : ['#6366f1']}
+              />
+            )}
           </div>
         )}
       </div>
