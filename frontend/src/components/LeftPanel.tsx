@@ -11,13 +11,16 @@ interface LeftPanelProps {
   onAIArrangeClick: () => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
-  isEditMode?: boolean;
   isConnectionMode?: boolean;
   connectingFromBlockId?: string | null;
   hoveredBlockId?: string | null;
   onConnectionStart?: (blockId: string) => void;
   onConnectionEnd?: (blockId: string) => void;
   onBlockHover?: (blockId: string | null) => void;
+  isDragMode?: boolean;
+  draggedBlockId?: string | null;
+  onDragStart?: (blockId: string) => void;
+  onDragEnd?: () => void;
 }
 
 export const LeftPanel: React.FC<LeftPanelProps> = ({
@@ -28,13 +31,16 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onAIArrangeClick,
   onBlockDelete,
   onBlockEdit,
-  isEditMode = false,
   isConnectionMode = false,
   connectingFromBlockId = null,
   hoveredBlockId = null,
   onConnectionStart,
   onConnectionEnd,
   onBlockHover,
+  isDragMode = false,
+  draggedBlockId = null,
+  onDragStart,
+  onDragEnd,
 }) => {
   return (
     <div
@@ -59,13 +65,16 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
         blocks={blocks}
         onBlockDelete={onBlockDelete}
         onBlockEdit={onBlockEdit}
-        isEditMode={isEditMode}
         isConnectionMode={isConnectionMode}
         connectingFromBlockId={connectingFromBlockId}
         hoveredBlockId={hoveredBlockId}
         onConnectionStart={onConnectionStart}
         onConnectionEnd={onConnectionEnd}
         onBlockHover={onBlockHover}
+        isDragMode={isDragMode}
+        draggedBlockId={draggedBlockId}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
       />
     </div>
   );

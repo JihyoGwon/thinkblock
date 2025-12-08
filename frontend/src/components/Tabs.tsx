@@ -1,11 +1,12 @@
 import React, { ReactNode } from 'react';
+import { Mode } from '../types/common';
 
 interface TabsProps {
   activeTab: number;
   onTabChange: (tab: number) => void;
   children: ReactNode;
-  mode?: 'view' | 'drag' | 'connection';
-  onModeChange?: (mode: 'view' | 'drag' | 'connection') => void;
+  mode?: Mode;
+  onModeChange?: (mode: Mode) => void;
 }
 
 export const Tabs: React.FC<TabsProps> = ({ activeTab, onTabChange, children, mode = 'view', onModeChange }) => {

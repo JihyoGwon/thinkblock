@@ -9,9 +9,6 @@ export const LEVELS = {
   MAX: 5,
 } as const;
 
-// 드래그 관련 상수
-export const DRAG_THRESHOLD = 5; // 5px 이상 이동해야 드래그로 인정
-
 // 블록 스타일 상수
 export const BLOCK_STYLES = {
   MIN_WIDTH: 240,

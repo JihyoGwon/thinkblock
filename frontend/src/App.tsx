@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DndContext, DragEndEvent, DragMoveEvent, closestCorners, CollisionDetection } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { Block as BlockType } from './types/block';
+import { Mode } from './types/common';
 import { handleError, showConfirm } from './utils/errorHandler';
 import { PyramidView } from './components/PyramidView';
 import { TableView } from './components/TableView';
@@ -19,7 +18,6 @@ import { useBlocks } from './hooks/useBlocks';
 import { useProjectData } from './hooks/useProjectData';
 import { groupBlocksByLevel, calculateMaxLevel } from './utils/blockUtils';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from './constants/styles';
-import { DRAG_THRESHOLD } from './constants/block';
 import './App.css';
 
 function App() {
@@ -41,12 +39,15 @@ function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockType | null>(null);
-  // 모드: 'view' (보기), 'drag' (드래그), 'connection' (연결선)
-  const [mode, setMode] = useState<'view' | 'drag' | 'connection'>('view'); // 기본값: 보기 모드
-  const [hasDragged, setHasDragged] = useState(false); // 실제로 드래그했는지 추적
+  // 모드: 'view' (보기), 'connection' (연결선), 'drag' (드래그)
+  const [mode, setMode] = useState<Mode>('view'); // 기본값: 보기 모드
   // 연결선 모드 상태
   const [connectingFromBlockId, setConnectingFromBlockId] = useState<string | null>(null); // 연결 시작 블록 ID
   const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null); // 호버된 블록 ID
+  // 드래그 모드 상태
+  const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null); // 드래그 중인 블록 ID
+  const [dragOverLevel, setDragOverLevel] = useState<number | null>(null); // 드롭 오버 중인 레벨
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null); // 드롭 위치 인덱스
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
@@ -99,8 +100,35 @@ function App() {
 
   const handleDeleteBlock = useCallback(async (blockId: string) => {
     if (!showConfirm('정말 이 블록을 삭제하시겠습니까?')) return;
-    await deleteBlock(blockId);
-  }, [deleteBlock]);
+    
+    try {
+      const blockToDelete = blocks.find(b => b.id === blockId);
+      if (!blockToDelete) return;
+      
+      // 블록 삭제
+      await deleteBlock(blockId);
+      
+      // 같은 레벨의 뒤에 있는 블록들의 order를 -1씩 감소
+      if (blockToDelete.level >= 0) {
+        const sameLevelBlocks = blocks
+          .filter(b => b.level === blockToDelete.level && b.id !== blockId)
+          .filter(b => b.order > blockToDelete.order)
+          .sort((a, b) => a.order - b.order);
+        
+        const updatePromises = sameLevelBlocks.map(b => 
+          updateBlock(b.id, { order: b.order - 1 })
+        );
+        
+        if (updatePromises.length > 0) {
+          await Promise.all(updatePromises);
+        }
+      }
+      
+      await fetchBlocks();
+    } catch (error) {
+      handleError(error, '블록 삭제에 실패했습니다.');
+    }
+  }, [blocks, deleteBlock, updateBlock, fetchBlocks]);
 
   const handleResetBlocks = async () => {
     if (!projectId) return;
@@ -127,6 +155,148 @@ function App() {
     setEditingBlock(block);
     setShowForm(true);
   }, []);
+
+  // 드래그 모드 핸들러
+  const handleDragStart = useCallback((blockId: string) => {
+    if (mode !== 'drag') return;
+    setDraggedBlockId(blockId);
+  }, [mode]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedBlockId(null);
+    setDragOverLevel(null);
+    setDragOverIndex(null);
+  }, []);
+
+  const handleDrop = useCallback(async (targetLevel: number, targetIndex?: number) => {
+    if (!draggedBlockId || mode !== 'drag') return;
+    
+    try {
+      const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+      if (!draggedBlock) return;
+
+      // 타겟 레벨의 블록들 가져오기 (드래그 중인 블록 제외)
+      const targetLevelBlocks = blocks
+        .filter(b => b.level === targetLevel && b.id !== draggedBlockId)
+        .sort((a, b) => a.order - b.order);
+
+      // 드롭 위치 인덱스 결정
+      // targetIndex가 제공되지 않으면 맨 끝에 추가
+      const insertIndex = targetIndex !== undefined && targetIndex !== null 
+        ? targetIndex 
+        : targetLevelBlocks.length;
+
+      // 새로운 order 값 계산
+      let newOrder: number;
+      if (targetLevelBlocks.length === 0) {
+        // 타겟 레벨에 블록이 없으면 0
+        newOrder = 0;
+      } else if (insertIndex === 0) {
+        // 맨 앞에 삽입: 첫 번째 블록의 order보다 작은 값 (예: 첫 번째 블록 order - 1, 또는 0)
+        newOrder = Math.max(0, targetLevelBlocks[0].order - 1);
+      } else if (insertIndex >= targetLevelBlocks.length) {
+        // 맨 끝에 추가: 마지막 블록의 order + 1
+        newOrder = targetLevelBlocks[targetLevelBlocks.length - 1].order + 1;
+      } else {
+        // 중간에 삽입: 앞 블록과 뒤 블록의 order 사이 값
+        const prevOrder = targetLevelBlocks[insertIndex - 1].order;
+        const nextOrder = targetLevelBlocks[insertIndex].order;
+        // order가 연속된 경우 재조정 필요
+        if (nextOrder - prevOrder <= 1) {
+          // 앞 블록들의 order를 재조정해야 함
+          // 일단 임시로 중간 값 사용하고, 이후 재조정
+          newOrder = prevOrder + 1;
+        } else {
+          newOrder = Math.floor((prevOrder + nextOrder) / 2);
+        }
+      }
+
+      // 같은 레벨 내에서 순서 변경인 경우
+      if (draggedBlock.level === targetLevel) {
+        // 같은 레벨의 모든 블록 가져오기 (드래그 중인 블록 포함)
+        const allLevelBlocks = blocks
+          .filter(b => b.level === targetLevel)
+          .sort((a, b) => a.order - b.order);
+        
+        // 드래그 중인 블록의 현재 인덱스 찾기
+        const currentIndex = allLevelBlocks.findIndex(b => b.id === draggedBlockId);
+        
+        if (currentIndex === -1) {
+          // 드래그 중인 블록을 찾을 수 없으면 에러
+          throw new Error('드래그 중인 블록을 찾을 수 없습니다.');
+        }
+        
+        // 기존 위치보다 앞으로 이동하는 경우
+        if (insertIndex < currentIndex) {
+          // 삽입 위치부터 현재 위치 전까지의 블록들의 order를 +1
+          const blocksToUpdate = allLevelBlocks
+            .slice(insertIndex, currentIndex)
+            .map(b => ({ ...b, newOrder: b.order + 1 }));
+          
+          const updatePromises = [
+            updateBlock(draggedBlockId, { level: targetLevel, order: newOrder }),
+            ...blocksToUpdate.map(b => 
+              updateBlock(b.id, { order: b.newOrder })
+            )
+          ];
+          await Promise.all(updatePromises);
+        } else if (insertIndex > currentIndex) {
+          // 뒤로 이동하는 경우
+          // 현재 위치 다음부터 삽입 위치 전까지의 블록들의 order를 -1
+          const blocksToUpdate = allLevelBlocks
+            .slice(currentIndex + 1, insertIndex)
+            .map(b => ({ ...b, newOrder: b.order - 1 }));
+          
+          const updatePromises = [
+            updateBlock(draggedBlockId, { level: targetLevel, order: newOrder }),
+            ...blocksToUpdate.map(b => 
+              updateBlock(b.id, { order: b.newOrder })
+            )
+          ];
+          await Promise.all(updatePromises);
+        } else {
+          // 같은 위치에 드롭 (변경 없음)
+          // 아무것도 하지 않음
+        }
+      } else {
+        // 다른 레벨로 이동하는 경우
+        // 삽입 위치 이후의 블록들의 order를 +1
+        const blocksToUpdate = targetLevelBlocks
+          .slice(insertIndex)
+          .filter(b => b.order >= newOrder);
+        
+        const updatePromises = [
+          updateBlock(draggedBlockId, { level: targetLevel, order: newOrder }),
+          ...blocksToUpdate.map(b => 
+            updateBlock(b.id, { order: b.order + 1 })
+          )
+        ];
+        await Promise.all(updatePromises);
+      }
+
+      await fetchBlocks();
+    } catch (error) {
+      handleError(error, '블록 이동에 실패했습니다.');
+    } finally {
+      setDraggedBlockId(null);
+      setDragOverLevel(null);
+      setDragOverIndex(null);
+    }
+  }, [draggedBlockId, mode, blocks, updateBlock, fetchBlocks]);
+
+  // 모드 변경 핸들러
+  const handleModeChange = useCallback((newMode: Mode) => {
+    // 기존 모드 상태 초기화
+    if (mode === 'connection') {
+      setConnectingFromBlockId(null);
+      setHoveredBlockId(null);
+    } else if (mode === 'drag') {
+      setDraggedBlockId(null);
+      setDragOverLevel(null);
+      setDragOverIndex(null);
+    }
+    setMode(newMode);
+  }, [mode]);
 
   // 연결선 모드 핸들러
   const handleConnectionStart = useCallback((blockId: string) => {
@@ -236,109 +406,9 @@ function App() {
     }
   };
 
-  // 레벨별로 블록 그룹화 (드래그앤드롭 처리를 위해 필요)
+  // 레벨별로 블록 그룹화
   const blocksByLevel = useMemo(() => groupBlocksByLevel(blocks), [blocks]);
   const maxLevel = useMemo(() => calculateMaxLevel(blocks), [blocks]);
-
-  // 커스텀 collision detection: 안정적인 드롭 감지
-  const customCollisionDetection: CollisionDetection = (args) => {
-    // 기본 collision detection 사용 (안정적)
-    const collisions = closestCorners(args);
-    
-    // 드롭존이 감지되면 우선 처리
-    if (collisions && collisions.length > 0) {
-      const dropzoneCollision = collisions.find(
-        collision => collision.id.toString().startsWith('dropzone-level-')
-      );
-      if (dropzoneCollision) {
-        return [dropzoneCollision];
-      }
-    }
-    
-    return collisions;
-  };
-
-  // 드래그 시작 핸들러
-  const handleDragStart = () => {
-    setHasDragged(false); // 드래그 시작 시 초기화
-  };
-
-  // 드래그 이동 핸들러 - 실제로 움직였는지 확인
-  const handleDragMove = (event: DragMoveEvent) => {
-    // 실제로 움직였는지 확인 (DRAG_THRESHOLD 이상 이동해야 드래그로 인정)
-    const deltaX = Math.abs(event.delta.x);
-    const deltaY = Math.abs(event.delta.y);
-    if (deltaX >= DRAG_THRESHOLD || deltaY >= DRAG_THRESHOLD) {
-      setHasDragged(true);
-    }
-  };
-
-  // 드래그앤드롭 핸들러 (BlockList와 PyramidView 모두에서 사용)
-  const handleDragEnd = async (event: DragEndEvent) => {
-    if (!projectId) return;
-    const { active, over } = event;
-
-    // 실제로 드래그하지 않았으면 무시 (클릭만 한 경우)
-    if (!hasDragged) {
-      setHasDragged(false);
-      return;
-    }
-
-    if (!over || active.id === over.id) {
-      setHasDragged(false);
-      return;
-    }
-
-    setHasDragged(false);
-
-    const activeBlock = blocks.find((b) => b.id === active.id);
-    if (!activeBlock) return;
-    
-    // 드롭존에 드롭한 경우 (레벨 컨테이너에 드롭)
-    if (typeof over.id === 'string' && over.id.startsWith('dropzone-level-')) {
-      const targetLevel = parseInt(over.id.replace('dropzone-level-', ''));
-      const targetLevelBlocks = blocksByLevel[targetLevel] || [];
-      const newOrder = targetLevelBlocks.length;
-
-      handleUpdateBlock(activeBlock.id, {
-        level: targetLevel,
-        order: newOrder,
-      });
-      return;
-    }
-
-    const overBlock = blocks.find((b) => b.id === over.id);
-
-    if (!overBlock) return;
-
-    // 같은 레벨 내에서 드래그: order만 변경
-    if (activeBlock.level === overBlock.level && activeBlock.level >= 0) {
-      const levelBlocks = blocksByLevel[activeBlock.level] || [];
-      const oldIndex = levelBlocks.findIndex((b) => b.id === active.id);
-      const newIndex = levelBlocks.findIndex((b) => b.id === over.id);
-      
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const newOrder = arrayMove(levelBlocks, oldIndex, newIndex);
-
-        newOrder.forEach((block, index) => {
-          if (block.order !== index) {
-            handleUpdateBlock(block.id, { order: index });
-          }
-        });
-      }
-    } else if (overBlock.level >= 0 && activeBlock.level !== overBlock.level) {
-      // 다른 레벨로 드래그: level과 order 변경
-      // 블록에 드롭했지만, 실제로는 해당 레벨의 드롭존에 드롭한 것으로 처리
-      const targetLevel = overBlock.level;
-      const targetLevelBlocks = blocksByLevel[targetLevel] || [];
-      const newOrder = targetLevelBlocks.length;
-
-      handleUpdateBlock(activeBlock.id, {
-        level: targetLevel,
-        order: newOrder,
-      });
-    }
-  };
 
   if (loading || projectLoading) {
     return (
@@ -538,7 +608,7 @@ function App() {
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         mode={mode}
-        onModeChange={setMode}
+        onModeChange={handleModeChange}
       >
         <main
         style={{
@@ -548,75 +618,85 @@ function App() {
         }}
       >
         {activeTab === 0 ? (
-          <DndContext 
-            collisionDetection={customCollisionDetection}
-            onDragStart={handleDragStart}
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              height: '100%',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
           >
+            {/* 왼쪽: 입력 영역 및 블록 목록 */}
+            <LeftPanel
+              isCollapsed={isLeftPanelCollapsed}
+              blocks={blocks}
+              onQuickCreate={handleQuickCreate}
+              onAIClick={handleAIClick}
+              onAIArrangeClick={handleAIArrangeClick}
+              onBlockDelete={handleDeleteBlock}
+              onBlockEdit={handleEditBlock}
+              isConnectionMode={mode === 'connection'}
+              connectingFromBlockId={connectingFromBlockId}
+              hoveredBlockId={hoveredBlockId}
+              onConnectionStart={handleConnectionStart}
+              onConnectionEnd={handleConnectionEnd}
+              onBlockHover={setHoveredBlockId}
+              isDragMode={mode === 'drag'}
+              draggedBlockId={draggedBlockId}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+
+            {/* 토글 버튼 */}
+            <PanelToggleButton
+              isCollapsed={isLeftPanelCollapsed}
+              leftPosition={400}
+              onToggle={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
+            />
+
+            {/* 오른쪽: 피라미드 영역 */}
             <div
               style={{
+                flex: 1,
                 display: 'flex',
-                flexDirection: 'row',
-                height: '100%',
+                flexDirection: 'column',
                 overflow: 'hidden',
-                position: 'relative',
+                backgroundColor: '#ffffff',
               }}
             >
-              {/* 왼쪽: 입력 영역 및 블록 목록 */}
-              <LeftPanel
-                isCollapsed={isLeftPanelCollapsed}
-                blocks={blocks}
-                onQuickCreate={handleQuickCreate}
-                onAIClick={handleAIClick}
-                onAIArrangeClick={handleAIArrangeClick}
+              <PyramidView
+                blocksByLevel={blocksByLevel}
+                maxLevel={maxLevel}
                 onBlockDelete={handleDeleteBlock}
                 onBlockEdit={handleEditBlock}
-                isEditMode={mode === 'drag'}
                 isConnectionMode={mode === 'connection'}
                 connectingFromBlockId={connectingFromBlockId}
                 hoveredBlockId={hoveredBlockId}
                 onConnectionStart={handleConnectionStart}
                 onConnectionEnd={handleConnectionEnd}
+                onConnectionCancel={handleConnectionCancel}
                 onBlockHover={setHoveredBlockId}
-              />
-
-              {/* 토글 버튼 */}
-              <PanelToggleButton
-                isCollapsed={isLeftPanelCollapsed}
-                leftPosition={400}
-                onToggle={() => setIsLeftPanelCollapsed(!isLeftPanelCollapsed)}
-              />
-
-              {/* 오른쪽: 피라미드 영역 */}
-              <div
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  backgroundColor: '#ffffff',
+                onRemoveDependency={handleRemoveDependency}
+                allBlocks={blocks}
+                isDragMode={mode === 'drag'}
+                draggedBlockId={draggedBlockId}
+                dragOverLevel={dragOverLevel}
+                dragOverIndex={dragOverIndex}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={(level, index) => {
+                  setDragOverLevel(level);
+                  setDragOverIndex(index ?? null);
                 }}
-              >
-                <PyramidView
-                  blocksByLevel={blocksByLevel}
-                  maxLevel={maxLevel}
-                  onBlockDelete={handleDeleteBlock}
-                  onBlockEdit={handleEditBlock}
-                  isEditMode={mode === 'drag'}
-                  isConnectionMode={mode === 'connection'}
-                  connectingFromBlockId={connectingFromBlockId}
-                  hoveredBlockId={hoveredBlockId}
-                  onConnectionStart={handleConnectionStart}
-                  onConnectionEnd={handleConnectionEnd}
-                  onConnectionCancel={handleConnectionCancel}
-                  onBlockHover={setHoveredBlockId}
-                  onRemoveDependency={handleRemoveDependency}
-                  allBlocks={blocks}
-                />
-              </div>
+                onDragLeave={() => {
+                  setDragOverLevel(null);
+                  setDragOverIndex(null);
+                }}
+                onDrop={handleDrop}
+              />
             </div>
-          </DndContext>
+          </div>
         ) : (
           <div
             style={{
@@ -636,6 +716,10 @@ function App() {
               onAIArrangeClick={handleAIArrangeClick}
               onBlockDelete={handleDeleteBlock}
               onBlockEdit={handleEditBlock}
+              isDragMode={mode === 'drag'}
+              draggedBlockId={draggedBlockId}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             />
 
             {/* 토글 버튼 */}

@@ -6,26 +6,32 @@ interface BlockListProps {
   blocks: BlockType[];
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
-  isEditMode?: boolean;
   isConnectionMode?: boolean;
   connectingFromBlockId?: string | null;
   hoveredBlockId?: string | null;
   onConnectionStart?: (blockId: string) => void;
   onConnectionEnd?: (blockId: string) => void;
   onBlockHover?: (blockId: string | null) => void;
+  isDragMode?: boolean;
+  draggedBlockId?: string | null;
+  onDragStart?: (blockId: string) => void;
+  onDragEnd?: () => void;
 }
 
 export const BlockList: React.FC<BlockListProps> = ({
   blocks,
   onBlockDelete,
   onBlockEdit,
-  isEditMode = false,
   isConnectionMode = false,
   connectingFromBlockId = null,
   hoveredBlockId = null,
   onConnectionStart,
   onConnectionEnd,
   onBlockHover,
+  isDragMode = false,
+  draggedBlockId = null,
+  onDragStart,
+  onDragEnd,
 }) => {
   // 레벨이 0 미만인 블록들만 표시 (아직 피라미드에 배치되지 않은 블록)
   const unassignedBlocks = blocks.filter((block) => block.level < 0);
@@ -54,8 +60,6 @@ export const BlockList: React.FC<BlockListProps> = ({
           }}
         >
           추가된 블록이 여기에 표시됩니다.
-          <br />
-          블록을 드래그하여 피라미드에 배치하세요.
         </div>
       ) : (
         <div
@@ -74,13 +78,16 @@ export const BlockList: React.FC<BlockListProps> = ({
               block={block}
               onEdit={onBlockEdit}
               onDelete={onBlockDelete}
-              isEditMode={isEditMode}
               isConnectionMode={isConnectionMode}
               connectingFromBlockId={connectingFromBlockId}
               hoveredBlockId={hoveredBlockId}
               onConnectionStart={onConnectionStart}
               onConnectionEnd={onConnectionEnd}
               onBlockHover={onBlockHover}
+              isDragMode={isDragMode}
+              draggedBlockId={draggedBlockId}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
             />
           ))}
         </div>

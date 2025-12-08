@@ -1,8 +1,4 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { Block as BlockType } from '../types/block';
 import { Block } from './Block';
 import { DropZone } from './DropZone';
@@ -14,7 +10,6 @@ interface PyramidViewProps {
   maxLevel: number;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
-  isEditMode?: boolean;
   isConnectionMode?: boolean;
   connectingFromBlockId?: string | null;
   hoveredBlockId?: string | null;
@@ -24,6 +19,15 @@ interface PyramidViewProps {
   onBlockHover?: (blockId: string | null) => void;
   onRemoveDependency?: (fromBlockId: string, toBlockId: string) => void;
   allBlocks?: BlockType[]; // 모든 블록을 전달받아 의존성 관계를 파악 (선택적)
+  isDragMode?: boolean;
+  draggedBlockId?: string | null;
+  dragOverLevel?: number | null;
+  dragOverIndex?: number | null;
+  onDragStart?: (blockId: string) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (level: number, index?: number) => void;
+  onDragLeave?: () => void;
+  onDrop?: (level: number, index?: number) => void;
 }
 
 export const PyramidView: React.FC<PyramidViewProps> = ({
@@ -31,7 +35,6 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   maxLevel,
   onBlockDelete,
   onBlockEdit,
-  isEditMode = false,
   isConnectionMode = false,
   connectingFromBlockId = null,
   hoveredBlockId = null,
@@ -41,6 +44,15 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   onBlockHover,
   onRemoveDependency,
   allBlocks: allBlocksProp,
+  isDragMode = false,
+  draggedBlockId = null,
+  dragOverLevel = null,
+  dragOverIndex = null,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<{ [blockId: string]: HTMLDivElement | null }>({});
@@ -108,8 +120,9 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
   const renderConnections = () => {
     console.log('renderConnections 호출:', { containerRect: !!containerRect, isConnectionMode, allBlocksCount: allBlocks.length });
     
-    if (!containerRect || !isConnectionMode) {
-      console.log('조건 불만족:', { containerRect: !!containerRect, isConnectionMode });
+    // 드래그 모드일 때는 연결선 렌더링 스킵 (성능 최적화)
+    if (!containerRect || !isConnectionMode || isDragMode) {
+      console.log('조건 불만족:', { containerRect: !!containerRect, isConnectionMode, isDragMode });
       return null;
     }
 
@@ -369,7 +382,18 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
           const isSingleBlock = blockCount === 1;
 
           return (
-            <DropZone key={level} level={level}>
+            <DropZone 
+              key={level} 
+              level={level}
+              isDragMode={isDragMode}
+              dragOverLevel={dragOverLevel}
+              dragOverIndex={dragOverIndex}
+              draggedBlockId={draggedBlockId}
+              blocks={levelBlocks}
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+            >
               <div
                 style={{
                   width: `${levelWidth}%`,
@@ -409,28 +433,26 @@ export const PyramidView: React.FC<PyramidViewProps> = ({
                   </span>
                 </div>
                 {hasBlocks ? (
-                  <SortableContext
-                    items={levelBlocks.map((b) => b.id)}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%' }}>
-                      {levelBlocks.map((block) => (
-                        <Block
-                          key={block.id}
-                          block={block}
-                          onEdit={onBlockEdit}
-                          onDelete={onBlockDelete}
-                          isEditMode={isEditMode}
-                          isConnectionMode={isConnectionMode}
-                          connectingFromBlockId={connectingFromBlockId}
-                          hoveredBlockId={hoveredBlockId}
-                          onConnectionStart={onConnectionStart}
-                          onConnectionEnd={onConnectionEnd}
-                          onBlockHover={onBlockHover}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
+                  <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '4px', justifyContent: 'flex-start', width: '100%' }}>
+                    {levelBlocks.map((block) => (
+                      <Block
+                        key={block.id}
+                        block={block}
+                        onEdit={onBlockEdit}
+                        onDelete={onBlockDelete}
+                        isConnectionMode={isConnectionMode}
+                        connectingFromBlockId={connectingFromBlockId}
+                        hoveredBlockId={hoveredBlockId}
+                        onConnectionStart={onConnectionStart}
+                        onConnectionEnd={onConnectionEnd}
+                        onBlockHover={onBlockHover}
+                        isDragMode={isDragMode}
+                        draggedBlockId={draggedBlockId}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                      />
+                    ))}
+                  </div>
                 ) : (
                   <span style={{ color: '#adb5bd', fontSize: '13px', fontStyle: 'italic', textAlign: 'left' }}>
                     여기에 블록을 드롭하세요

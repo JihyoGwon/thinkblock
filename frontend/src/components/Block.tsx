@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
 import { Block as BlockType } from '../types/block';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { getCategoryColor } from '../utils/categoryColors';
 import { LEVEL_BLOCK_COLORS, BLOCK_STYLES } from '../constants/block';
 
@@ -9,45 +7,35 @@ interface BlockProps {
   block: BlockType;
   onEdit: (block: BlockType) => void;
   onDelete: (blockId: string) => void;
-  isEditMode?: boolean; // 수정 모드 여부
   isConnectionMode?: boolean; // 연결선 모드 여부
   connectingFromBlockId?: string | null; // 연결 시작 블록 ID
   hoveredBlockId?: string | null; // 호버된 블록 ID
   onConnectionStart?: (blockId: string) => void;
   onConnectionEnd?: (blockId: string) => void;
   onBlockHover?: (blockId: string | null) => void;
+  isDragMode?: boolean; // 드래그 모드 여부
+  draggedBlockId?: string | null; // 드래그 중인 블록 ID
+  onDragStart?: (blockId: string) => void;
+  onDragEnd?: () => void;
 }
 
 export const Block: React.FC<BlockProps> = ({ 
   block, 
   onEdit, 
   onDelete, 
-  isEditMode = false,
   isConnectionMode = false,
   connectingFromBlockId = null,
   hoveredBlockId = null,
   onConnectionStart,
   onConnectionEnd,
   onBlockHover,
+  isDragMode = false,
+  draggedBlockId = null,
+  onDragStart,
+  onDragEnd,
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id: block.id,
-    disabled: !isEditMode || isConnectionMode, // 수정 모드가 아니거나 연결선 모드면 드래그 비활성화
-  });
-
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.8 : 1,
     position: 'relative' as const,
-    zIndex: isDragging ? 9999 : 'auto', // 드래그 중일 때 매우 높은 z-index
   };
 
   // 레벨에 따른 색상 (밝은 회색+반투명) - useMemo로 최적화
@@ -56,40 +44,62 @@ export const Block: React.FC<BlockProps> = ({
   }, [block.level]);
 
   const [showDelete, setShowDelete] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
   
   // 카테고리 색상 가져오기
   const categoryColor = block.category ? getCategoryColor(block.category) : null;
 
-  // 수정 모드에 따라 드래그 리스너 적용 (연결선 모드일 때는 드래그 비활성화)
-  const dragListeners = (isEditMode && !isConnectionMode) ? listeners : {};
+  // 드래그 이벤트 핸들러
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!isDragMode || !onDragStart) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', block.id);
+    setIsDragging(true);
+    onDragStart(block.id);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragMode || !onDragEnd) return;
+    setIsDragging(false);
+    onDragEnd();
+  };
+
+  // 커서 스타일 결정
+  const getCursorStyle = () => {
+    if (isConnectionMode) {
+      return connectingFromBlockId === block.id ? 'default' : (hoveredBlockId === block.id ? 'pointer' : 'default');
+    }
+    if (isDragMode) {
+      return isDragging ? 'grabbing' : 'grab';
+    }
+    return 'pointer';
+  };
+
+  // 드래그 중인 블록인지 확인
+  const isBeingDragged = draggedBlockId === block.id;
 
   return (
     <div
-      ref={setNodeRef}
       data-block-id={block.id}
-      {...attributes}
-      {...dragListeners}
       className="block"
+      draggable={isDragMode}
       style={{
         ...style,
         backgroundColor: levelColor,
         border: '1px solid',
-        borderColor: isDragging ? '#6366f1' : '#e9ecef',
+        borderColor: '#e9ecef',
         borderRadius: `${BLOCK_STYLES.BORDER_RADIUS}px`,
         padding: `${BLOCK_STYLES.PADDING}px`,
         margin: `${BLOCK_STYLES.MARGIN}px ${BLOCK_STYLES.MARGIN}px ${BLOCK_STYLES.MARGIN}px 0`, // 왼쪽 마진 제거
-        cursor: isConnectionMode 
-          ? (connectingFromBlockId === block.id ? 'default' : (hoveredBlockId === block.id ? 'pointer' : 'default'))
-          : (isEditMode ? (isDragging ? 'grabbing' : 'grab') : 'pointer'),
+        cursor: getCursorStyle(),
+        opacity: isBeingDragged ? 0.5 : 1,
         width: '100%', // 부모 컨테이너의 너비에 맞춤
         minWidth: `${BLOCK_STYLES.MIN_WIDTH}px`,
         maxWidth: `${BLOCK_STYLES.MAX_WIDTH}px`,
         boxSizing: 'border-box', // padding과 border 포함한 너비 계산
         flexShrink: 0, // flex 컨테이너에서 축소 방지
-        boxShadow: isDragging 
-          ? '0 12px 24px rgba(99, 102, 241, 0.2)' 
-          : '0 2px 8px rgba(0,0,0,0.04)',
-        transition: isDragging ? 'none' : 'all 0.2s ease',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        transition: 'all 0.2s ease',
       }}
       onMouseEnter={() => {
         if (isConnectionMode && onBlockHover) {
@@ -105,7 +115,14 @@ export const Block: React.FC<BlockProps> = ({
           setShowDelete(false);
         }
       }}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={(e) => {
+        // 드래그 모드일 때는 편집 모달을 열지 않음
+        if (isDragMode) {
+          return;
+        }
+        
         // 연결선 모드일 때는 편집 모달을 열지 않음
         if (isConnectionMode) {
           e.stopPropagation();
@@ -126,11 +143,9 @@ export const Block: React.FC<BlockProps> = ({
         }
         
         // 연결선 모드가 아닐 때만
-        if (!isEditMode) {
-          e.stopPropagation();
-          // 보기 모드일 때만 클릭으로 편집 모달 열기
-          onEdit(block);
-        }
+        e.stopPropagation();
+        // 보기 모드일 때만 클릭으로 편집 모달 열기
+        onEdit(block);
       }}
     >
       {/* 삭제 버튼 - 우측 상단 모서리 */}

@@ -2,7 +2,7 @@
  * 공통 타입 정의
  */
 
-export type Mode = 'view' | 'drag' | 'connection';
+export type Mode = 'view' | 'connection' | 'drag';
 
 export interface Project {
   id: string;
