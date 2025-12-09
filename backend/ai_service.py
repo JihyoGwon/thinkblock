@@ -825,38 +825,21 @@ def generate_feedback(
 
 다음 사고 과정을 거쳐 체계적으로 분석하세요:
 
-1. **현재 배치 상태 분석**:
-   - 위에 제공된 레벨 분포와 블록 목록을 정확히 확인하세요.
-   - 현재 블록 배치의 전체적인 구조는 어떻게 되어 있는가?
-   - 레벨 분포가 적절한가? (모든 블록이 한 레벨에 몰려있지 않은가?)
-   - 각 레벨에 배치된 블록들이 해당 레벨의 목적에 부합하는가?
-   - **주의**: 블록 목록에 실제로 표시된 레벨만 분석하세요. 블록 목록에 없는 레벨은 비어있다고 판단하지 마세요.
+1. **프로젝트 분석**:
+   - 각 레벨에 배치된 블록들로 추론한 각 레벨별 주요 목적은 무엇인가?
+   - 레벨의 흐름으로 추론한 프로젝트의 핵심 과제는 무엇인가?
+   - 프로젝트의 핵심 과제 달성을 위해 사용자는 어떤 논리적 흐름을 설계했는가?
 
-2. **배치 의도 분석**:
-   - 현재 배치가 의도한 목표와 일치하는가?
-   - 프로젝트의 핵심 목표를 달성하기 위한 논리적 순서가 잘 구성되어 있는가?
+2. **블록 배치 및 의존성 평가**:
    - 레벨 간의 흐름이 자연스러운가?
+   - 의존성 관계가 올바르게 반영되어 있는가?
 
-3. **배치 목적 평가**:
-   - 각 레벨의 목적이 명확하게 드러나는가?
-   - 레벨 0의 기반 블록들이 충분한가?
-   - 레벨 4의 목표 블록들이 최종 목표를 잘 나타내는가?
+3. **보완점 제안**:
+   - 시스템적 사고의 관점에서, 누락된 중요한 블록이 있는가?
 
-4. **개선점 제안**:
-   - 레벨 조정이 필요한 블록이 있는가? (어떤 블록을 어느 레벨로 이동하면 좋을지)
-   - 의존성 관계가 올바르게 반영되어 있는가? (의존성이 있는데 레벨이 잘못된 경우)
-   - 레벨 간의 논리적 흐름을 개선할 수 있는 방법은?
-
-5. **보완점 제안**:
-   - 누락된 중요한 블록이 있는가?
-   - 특정 레벨에 블록이 부족하거나 과도한가?
+4. **사용자를 위한 조언**:
+   - 의사결정자를 설득시키고 싶다면 어떤 점을 강조할 것인가?
    - 프로젝트의 안정성과 성공 가능성을 높이기 위해 추가로 고려할 사항은?
-
-6. **레벨별 상세 평가**:
-   - 실제로 블록이 배치된 각 레벨의 블록 구성이 적절한가?
-   - 각 레벨에서 달성해야 할 목표가 명확한가?
-   - 각 레벨의 블록들이 서로 잘 연계되어 있는가?
-   - **주의**: 실제로 블록이 배치된 레벨만 평가하세요. 빈 레벨에 대해서는 별도로 언급하지 마세요.
 
 ## 응답 형식
 
@@ -864,12 +847,10 @@ def generate_feedback(
 
 {{
   "thinking_process": {{
-    "current_state_analysis": "현재 배치 상태 분석",
-    "intention_analysis": "배치 의도 분석",
-    "purpose_evaluation": "배치 목적 평가",
-    "improvement_suggestions": "개선점 제안 (구체적인 레벨 조정 제안 포함)",
-    "complementary_suggestions": "보완점 제안 (누락된 블록, 추가 고려사항)",
-    "level_by_level_review": "레벨별 상세 평가 (실제로 블록이 배치된 레벨에 대한 평가)"
+    "project_analysis": "프로젝트 분석 (각 레벨별 주요 목적, 프로젝트의 핵심 과제, 논리적 흐름)",
+    "arrangement_and_dependency_evaluation": "배치 및 의존성 평가 (레벨 간 흐름, 의존성 관계)",
+    "complementary_suggestions": "보완점 제안 (시스템적 사고의 관점에서, 누락된 중요한 블록)",
+    "user_advice": "사용자를 위한 조언 (의사결정자 설득 포인트, 안정성과 성공 가능성 향상 방안)"
   }},
   "feedback": "전체 피드백 요약 (마크다운 형식, 사용자에게 보여질 최종 피드백)"
 }}
@@ -878,10 +859,10 @@ def generate_feedback(
 - thinking_process의 각 항목을 상세하고 논리적으로 작성하세요.
 - feedback 필드는 반드시 포함해야 하며, 사용자가 읽기 쉽도록 마크다운 형식으로 작성하세요.
 - feedback은 다음 구조를 따라야 합니다:
-  1. 프로젝트 피드백 요약 (간단한 전체 평가)
-  2. 개선 사항 (구체적인 레벨 조정 및 블록 이동 제안)
-  3. 보완 사항 (추가로 필요한 블록이나 고려사항)
-- 개선점과 보완점은 구체적이고 실행 가능한 제안을 포함하세요.
+  1. 프로젝트 분석 요약 (레벨별 목적, 핵심 과제 1줄, 과제 달성을 위한 논리적 흐름)
+  2. 배치 및 의존성 평가 (레벨 간 흐름, 의존성 관계)
+  3. 보완점 (시스템적 사고의 관점에서, 누락된 중요한 블록)
+  4. 사용자를 위한 조언 (의사결정자 설득 포인트, 안정성 향상 방안)
 - 긍정적인 부분도 언급하면서, 개선할 부분을 건설적으로 제시하세요.
 - feedback은 thinking_process의 내용을 요약하되, 사용자에게 보여질 최종 피드백 형식으로 작성하세요."""
 
@@ -909,23 +890,17 @@ def generate_feedback(
                 print(f"⚠️  feedback 필드가 없어 thinking_process를 기반으로 생성")
                 feedback_parts = []
                 
-                if thinking_process.get("current_state_analysis"):
-                    feedback_parts.append(f"## 현재 배치 상태 분석\n{thinking_process.get('current_state_analysis')}")
+                if thinking_process.get("project_analysis"):
+                    feedback_parts.append(f"## 프로젝트 분석\n{thinking_process.get('project_analysis')}")
                 
-                if thinking_process.get("intention_analysis"):
-                    feedback_parts.append(f"\n## 배치 의도 분석\n{thinking_process.get('intention_analysis')}")
-                
-                if thinking_process.get("purpose_evaluation"):
-                    feedback_parts.append(f"\n## 배치 목적 평가\n{thinking_process.get('purpose_evaluation')}")
-                
-                if thinking_process.get("improvement_suggestions"):
-                    feedback_parts.append(f"\n## 개선점 제안\n{thinking_process.get('improvement_suggestions')}")
+                if thinking_process.get("arrangement_and_dependency_evaluation"):
+                    feedback_parts.append(f"\n## 배치 및 의존성 평가\n{thinking_process.get('arrangement_and_dependency_evaluation')}")
                 
                 if thinking_process.get("complementary_suggestions"):
                     feedback_parts.append(f"\n## 보완점 제안\n{thinking_process.get('complementary_suggestions')}")
                 
-                if thinking_process.get("level_by_level_review"):
-                    feedback_parts.append(f"\n## 레벨별 상세 평가\n{thinking_process.get('level_by_level_review')}")
+                if thinking_process.get("user_advice"):
+                    feedback_parts.append(f"\n## 사용자를 위한 조언\n{thinking_process.get('user_advice')}")
                 
                 feedback = "\n\n".join(feedback_parts)
                 print(f"✅ thinking_process 기반으로 feedback 생성 완료: {len(feedback)} 문자")

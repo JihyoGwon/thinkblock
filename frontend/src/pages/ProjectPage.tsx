@@ -45,6 +45,7 @@ export const ProjectPage: React.FC = () => {
     updateCategories,
     updateCategoryColors,
     updateProject,
+    refetch: refetchProjectData,
   } = useProjectData(projectId);
 
   // 상태 정의 (먼저 정의)
@@ -244,31 +245,15 @@ export const ProjectPage: React.FC = () => {
     await fetchBlocks();
   };
 
-  const handleAIArrangeSuccess = async (reasoning?: string) => {
+  const handleAIArrangeSuccess = async (_reasoning?: string) => {
     await fetchBlocks();
-    // 프로젝트 데이터 다시 로드하여 최신 arrangement_reasoning 가져오기 (백엔드에서 JSON 형식으로 저장됨)
-    if (projectId) {
-      const projectData = await api.getProject(projectId);
-      if (projectData?.arrangement_reasoning) {
-        setArrangementReasoning(projectData.arrangement_reasoning);
-      } else {
-        setArrangementReasoning('');
-      }
-    }
+    // 프로젝트 데이터 다시 로드하여 최신 arrangement_reasoning 가져오기
+    await refetchProjectData();
   };
 
   const handleAIFeedbackSuccess = async () => {
     // 프로젝트 데이터 다시 로드하여 최신 피드백 가져오기
-    if (projectId) {
-      try {
-        const projectData = await api.getProject(projectId);
-        if (projectData?.arrangement_reasoning) {
-          setArrangementReasoning(projectData.arrangement_reasoning);
-        }
-      } catch (error) {
-        logger.error('피드백 로드 실패:', error);
-      }
-    }
+    await refetchProjectData();
   };
 
   // 레벨별로 블록 그룹화
