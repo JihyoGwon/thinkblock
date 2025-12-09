@@ -14,49 +14,33 @@
 
 ## 백엔드 리팩토링
 
-### 1. API 라우터 분리 (우선순위: 높음)
+### 1. API 라우터 분리 (우선순위: 높음) ✅ 완료
 
 **현재 문제점:**
-- `backend/main.py`에 모든 API 엔드포인트가 한 파일에 집중되어 있음 (572줄)
-- 유지보수성과 가독성이 떨어짐
-- 테스트 작성이 어려움
+- ~~`backend/main.py`에 모든 API 엔드포인트가 한 파일에 집중되어 있음 (572줄)~~ ✅ **해결됨**
+- ~~유지보수성과 가독성이 떨어짐~~ ✅ **해결됨**
+- ~~테스트 작성이 어려움~~ ✅ **해결됨**
 
-**개선 방안:**
+**개선 완료:**
 ```
 backend/
-├── main.py                    # FastAPI 앱 초기화만 담당
+├── main.py                    # FastAPI 앱 초기화만 담당 (약 60줄)
+├── models.py                  # 공통 모델 정의
 ├── routers/
 │   ├── __init__.py
-│   ├── blocks.py              # 블록 관련 엔드포인트
-│   ├── projects.py            # 프로젝트 관련 엔드포인트
-│   ├── categories.py          # 카테고리 관련 엔드포인트
-│   ├── dependencies.py        # 의존성 관련 엔드포인트
-│   └── ai.py                  # AI 관련 엔드포인트
-├── services/
-│   ├── block_service.py       # 블록 비즈니스 로직
-│   └── project_service.py     # 프로젝트 비즈니스 로직
+│   ├── blocks.py              # 블록 관련 엔드포인트 (4개)
+│   ├── projects.py            # 프로젝트 관련 엔드포인트 (6개)
+│   ├── categories.py          # 카테고리 및 색상 관련 엔드포인트 (6개)
+│   ├── dependencies.py        # 의존성 관련 엔드포인트 (3개)
+│   └── ai.py                  # AI 관련 엔드포인트 (2개)
 └── ...
 ```
 
-**예시:**
-```python
-# routers/blocks.py
-from fastapi import APIRouter, HTTPException
-from typing import List
-from models import Block, BlockCreate, BlockUpdate
-
-router = APIRouter(prefix="/api/projects/{project_id}/blocks", tags=["blocks"])
-
-@router.get("")
-async def get_blocks(project_id: str):
-    # 구현
-    pass
-
-@router.post("")
-async def create_block(project_id: str, block: BlockCreate):
-    # 구현
-    pass
-```
+**구현 내용:**
+- 모든 엔드포인트를 기능별로 분리
+- `main.py`는 앱 초기화와 라우터 등록만 담당
+- 각 라우터는 독립적으로 관리 가능
+- 테스트 작성 및 유지보수 용이성 향상
 
 ### 2. 저장소 추상화 개선 (우선순위: 높음) ✅ 완료
 
@@ -711,7 +695,16 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 
 ### Phase 1 (즉시 실행)
 1. ⏳ App.tsx 컴포넌트 분리
-2. ⏳ API 라우터 분리
+2. ✅ **API 라우터 분리** - **완료**
+   - `backend/models.py` 생성 (공통 모델 정의)
+   - `backend/routers/` 디렉토리 생성
+   - `routers/blocks.py` - 블록 관련 엔드포인트 (4개)
+   - `routers/projects.py` - 프로젝트 관련 엔드포인트 (6개)
+   - `routers/categories.py` - 카테고리 및 색상 관련 엔드포인트 (6개)
+   - `routers/dependencies.py` - 의존성 관련 엔드포인트 (3개)
+   - `routers/ai.py` - AI 관련 엔드포인트 (2개)
+   - `main.py` 간소화 (523줄 → 약 60줄)
+   - 모든 엔드포인트를 기능별로 분리하여 유지보수성 향상
 3. ✅ **저장소 추상화 개선** - **완료**
    - `StorageInterface` 추상 클래스 생성
    - `MemoryStore`와 `FirestoreStore` 구현
