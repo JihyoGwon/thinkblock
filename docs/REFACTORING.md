@@ -58,14 +58,22 @@ async def create_block(project_id: str, block: BlockCreate):
     pass
 ```
 
-### 2. 저장소 추상화 개선 (우선순위: 높음)
+### 2. 저장소 추상화 개선 (우선순위: 높음) ✅ 완료
 
 **현재 문제점:**
-- `_get_store_func()` 함수가 `globals()`를 사용하는 안티패턴
-- 메모리 스토어와 Firestore 간 인터페이스 불일치
-- 테스트 작성이 어려움
+- ~~`_get_store_func()` 함수가 `globals()`를 사용하는 안티패턴~~ ✅ **완료**
+- ~~메모리 스토어와 Firestore 간 인터페이스 불일치~~ ✅ **완료**
+- ~~테스트 작성이 어려움~~ ✅ **완료**
 
-**개선 방안:**
+**완료된 작업:**
+- ✅ `StorageInterface` 추상 클래스 생성 (`backend/storage/base.py`)
+- ✅ `MemoryStore`를 `StorageInterface` 구현하도록 수정 (`backend/storage/memory_store.py`)
+- ✅ `FirestoreStore` 클래스 생성 (`backend/storage/firestore_store.py`)
+- ✅ `main.py`에서 `globals()` 패턴 제거
+- ✅ 모든 엔드포인트에서 `storage` 인스턴스 직접 사용
+- ✅ 타입 안정성 향상 및 테스트 가능성 개선
+
+**개선된 구조:**
 ```python
 # storage/base.py
 from abc import ABC, abstractmethod
@@ -74,10 +82,6 @@ from typing import List, Optional, Dict
 class StorageInterface(ABC):
     @abstractmethod
     def get_all_blocks(self, project_id: str) -> List[dict]:
-        pass
-    
-    @abstractmethod
-    def create_block(self, project_id: str, block_data: dict) -> dict:
         pass
     
     # ... 기타 메서드
@@ -91,11 +95,18 @@ class FirestoreStore(StorageInterface):
     # 구현
 
 # main.py
+from storage import StorageInterface, MemoryStore, FirestoreStore
+
 def get_storage() -> StorageInterface:
     if USE_MEMORY_STORE:
         return MemoryStore()
     else:
         return FirestoreStore()
+
+storage = get_storage()  # 전역 인스턴스
+
+# 사용 예시
+blocks = storage.get_all_blocks(project_id)  # ✅ 타입 안전, 명확함
 ```
 
 ### 3. 에러 처리 통합 (우선순위: 중간)
@@ -701,7 +712,11 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 ### Phase 1 (즉시 실행)
 1. ⏳ App.tsx 컴포넌트 분리
 2. ⏳ API 라우터 분리
-3. ⏳ 저장소 추상화 개선
+3. ✅ **저장소 추상화 개선** - **완료**
+   - `StorageInterface` 추상 클래스 생성
+   - `MemoryStore`와 `FirestoreStore` 구현
+   - `globals()` 안티패턴 제거
+   - 모든 엔드포인트에서 타입 안전한 인터페이스 사용
 4. ✅ **console.log 제거** - **완료**
    - 로거 유틸리티 생성 (`frontend/src/utils/logger.ts`)
    - 모든 파일의 `console.log` 제거 또는 `logger`로 교체

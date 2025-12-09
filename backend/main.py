@@ -14,41 +14,19 @@ load_dotenv()
 USE_MEMORY_STORE = os.getenv("USE_MEMORY_STORE", "false").lower() == "true"
 
 # 저장소 초기화
-if USE_MEMORY_STORE:
-    from memory_store import memory_store as store
-    print("⚠️  인메모리 저장소를 사용합니다 (로컬 테스트 모드)")
-else:
-    from firestore_service import (
-        get_all_blocks,
-        get_block,
-        create_block,
-        update_block,
-        delete_block,
-        get_categories,
-        update_categories,
-        get_dependency_colors,
-        update_dependency_color,
-        remove_dependency_color,
-        get_category_colors,
-        update_category_colors,
-        get_connection_color_palette,
-        update_connection_color_palette,
-        create_project,
-        get_project,
-        get_all_projects,
-        update_project,
-        delete_project,
-        duplicate_project,
-    )
-    print("📦 Firestore를 사용합니다")
+from storage import StorageInterface, MemoryStore, FirestoreStore
 
-
-def _get_store_func(func_name: str):
-    """저장소 함수를 가져오는 헬퍼"""
+def get_storage() -> StorageInterface:
+    """저장소 인스턴스 반환"""
     if USE_MEMORY_STORE:
-        return getattr(store, func_name)
+        print("⚠️  인메모리 저장소를 사용합니다 (로컬 테스트 모드)")
+        return MemoryStore()
     else:
-        return globals()[func_name]
+        print("📦 Firestore를 사용합니다")
+        return FirestoreStore()
+
+# 전역 저장소 인스턴스
+storage = get_storage()
 
 app = FastAPI(title="ThinkBlock API")
 
@@ -113,8 +91,7 @@ class AIArrangeBlocksRequest(BaseModel):
 async def get_blocks(project_id: str):
     """프로젝트의 모든 블록 조회"""
     try:
-        func = _get_store_func("get_all_blocks")
-        blocks = func(project_id)
+        blocks = storage.get_all_blocks(project_id)
         return {"blocks": blocks}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 조회 실패: {str(e)}")
@@ -124,8 +101,7 @@ async def create_block_endpoint(project_id: str, block: BlockCreate):
     """새 블록 생성"""
     try:
         block_data = block.dict()
-        func = _get_store_func("create_block")
-        created_block = func(project_id, block_data)
+        created_block = storage.create_block(project_id, block_data)
         return {"block": created_block}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"블록 생성 실패: {str(e)}")
@@ -135,8 +111,7 @@ async def update_block_endpoint(project_id: str, block_id: str, block_update: Bl
     """블록 업데이트"""
     try:
         updates = block_update.dict(exclude_unset=True)
-        func = _get_store_func("update_block")
-        updated_block = func(project_id, block_id, updates)
+        updated_block = storage.update_block(project_id, block_id, updates)
         
         if updated_block is None:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
@@ -151,8 +126,7 @@ async def update_block_endpoint(project_id: str, block_id: str, block_update: Bl
 async def delete_block_endpoint(project_id: str, block_id: str):
     """블록 삭제"""
     try:
-        func = _get_store_func("delete_block")
-        success = func(project_id, block_id)
+        success = storage.delete_block(project_id, block_id)
         
         if not success:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
@@ -171,24 +145,20 @@ class DependencyRequest(BaseModel):
 async def add_dependency_endpoint(project_id: str, block_id: str, request: DependencyRequest):
     """블록에 의존성 추가"""
     try:
-        get_block_func = _get_store_func("get_block")
-        update_block_func = _get_store_func("update_block")
-        update_dependency_color_func = _get_store_func("update_dependency_color")
-        
-        block = get_block_func(project_id, block_id)
+        block = storage.get_block(project_id, block_id)
         if not block:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
         
         dependencies = block.get("dependencies", [])
         if request.dependency_id not in dependencies:
             dependencies.append(request.dependency_id)
-            update_block_func(project_id, block_id, {"dependencies": dependencies})
+            storage.update_block(project_id, block_id, {"dependencies": dependencies})
         
         # 색상이 제공된 경우 의존성 색상 저장
         if request.color:
-            update_dependency_color_func(project_id, block_id, request.dependency_id, request.color)
+            storage.update_dependency_color(project_id, block_id, request.dependency_id, request.color)
         
-        updated_block = get_block_func(project_id, block_id)
+        updated_block = storage.get_block(project_id, block_id)
         return {"block": updated_block}
     except HTTPException:
         raise
@@ -199,22 +169,18 @@ async def add_dependency_endpoint(project_id: str, block_id: str, request: Depen
 async def remove_dependency_endpoint(project_id: str, block_id: str, dependency_id: str):
     """블록에서 의존성 제거"""
     try:
-        get_block_func = _get_store_func("get_block")
-        update_block_func = _get_store_func("update_block")
-        remove_dependency_color_func = _get_store_func("remove_dependency_color")
-        
-        block = get_block_func(project_id, block_id)
+        block = storage.get_block(project_id, block_id)
         if not block:
             raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
         
         dependencies = block.get("dependencies", [])
         if dependency_id in dependencies:
             dependencies.remove(dependency_id)
-            update_block_func(project_id, block_id, {"dependencies": dependencies})
+            storage.update_block(project_id, block_id, {"dependencies": dependencies})
             # 의존성 색상도 제거
-            remove_dependency_color_func(project_id, block_id, dependency_id)
+            storage.remove_dependency_color(project_id, block_id, dependency_id)
         
-        updated_block = get_block_func(project_id, block_id)
+        updated_block = storage.get_block(project_id, block_id)
         return {"block": updated_block}
     except HTTPException:
         raise
@@ -225,8 +191,7 @@ async def remove_dependency_endpoint(project_id: str, block_id: str, dependency_
 async def get_categories_endpoint(project_id: str):
     """프로젝트의 카테고리 목록 조회"""
     try:
-        func = _get_store_func("get_categories")
-        categories = func(project_id)
+        categories = storage.get_categories(project_id)
         return {"categories": categories}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 조회 실패: {str(e)}")
@@ -235,8 +200,7 @@ async def get_categories_endpoint(project_id: str):
 async def update_categories_endpoint(project_id: str, categories_update: CategoriesUpdate):
     """프로젝트의 카테고리 목록 업데이트"""
     try:
-        func = _get_store_func("update_categories")
-        updated_categories = func(project_id, categories_update.categories)
+        updated_categories = storage.update_categories(project_id, categories_update.categories)
         return {"categories": updated_categories}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 업데이트 실패: {str(e)}")
@@ -246,8 +210,7 @@ async def update_categories_endpoint(project_id: str, categories_update: Categor
 async def get_dependency_colors_endpoint(project_id: str):
     """프로젝트의 의존성 색상 맵 조회"""
     try:
-        func = _get_store_func("get_dependency_colors")
-        colors = func(project_id)
+        colors = storage.get_dependency_colors(project_id)
         return {"colors": colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"의존성 색상 조회 실패: {str(e)}")
@@ -260,8 +223,7 @@ class ConnectionColorPaletteUpdate(BaseModel):
 async def get_connection_color_palette_endpoint(project_id: str):
     """프로젝트의 연결선 색상 팔레트 조회"""
     try:
-        func = _get_store_func("get_connection_color_palette")
-        colors = func(project_id)
+        colors = storage.get_connection_color_palette(project_id)
         return {"colors": colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"연결선 색상 팔레트 조회 실패: {str(e)}")
@@ -270,8 +232,7 @@ async def get_connection_color_palette_endpoint(project_id: str):
 async def update_connection_color_palette_endpoint(project_id: str, palette_update: ConnectionColorPaletteUpdate):
     """프로젝트의 연결선 색상 팔레트 업데이트"""
     try:
-        func = _get_store_func("update_connection_color_palette")
-        updated_colors = func(project_id, palette_update.colors)
+        updated_colors = storage.update_connection_color_palette(project_id, palette_update.colors)
         return {"colors": updated_colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"연결선 색상 팔레트 업데이트 실패: {str(e)}")
@@ -284,8 +245,7 @@ class CategoryColorsUpdate(BaseModel):
 async def get_category_colors_endpoint(project_id: str):
     """프로젝트의 카테고리 색상 맵 조회"""
     try:
-        func = _get_store_func("get_category_colors")
-        colors = func(project_id)
+        colors = storage.get_category_colors(project_id)
         return {"colors": colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 색상 조회 실패: {str(e)}")
@@ -294,8 +254,7 @@ async def get_category_colors_endpoint(project_id: str):
 async def update_category_colors_endpoint(project_id: str, colors_update: CategoryColorsUpdate):
     """프로젝트의 카테고리 색상 맵 업데이트"""
     try:
-        func = _get_store_func("update_category_colors")
-        updated_colors = func(project_id, colors_update.colors)
+        updated_colors = storage.update_category_colors(project_id, colors_update.colors)
         return {"colors": updated_colors}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"카테고리 색상 업데이트 실패: {str(e)}")
@@ -305,8 +264,7 @@ async def update_category_colors_endpoint(project_id: str, colors_update: Catego
 async def create_project_endpoint(project: ProjectCreate):
     """새 프로젝트 생성"""
     try:
-        func = _get_store_func("create_project")
-        created_project = func(project.name)
+        created_project = storage.create_project(project.name)
         return {"project": created_project}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"프로젝트 생성 실패: {str(e)}")
@@ -315,8 +273,7 @@ async def create_project_endpoint(project: ProjectCreate):
 async def get_all_projects_endpoint():
     """모든 프로젝트 조회"""
     try:
-        func = _get_store_func("get_all_projects")
-        projects = func()
+        projects = storage.get_all_projects()
         return {"projects": projects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
@@ -325,8 +282,7 @@ async def get_all_projects_endpoint():
 async def get_project_endpoint(project_id: str):
     """프로젝트 조회"""
     try:
-        func = _get_store_func("get_project")
-        project = func(project_id)
+        project = storage.get_project(project_id)
         
         if project is None:
             raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
@@ -342,8 +298,7 @@ async def update_project_endpoint(project_id: str, project_update: ProjectUpdate
     """프로젝트 업데이트"""
     try:
         updates = project_update.dict(exclude_unset=True)
-        func = _get_store_func("update_project")
-        updated_project = func(project_id, updates)
+        updated_project = storage.update_project(project_id, updates)
         
         if updated_project is None:
             raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
@@ -358,8 +313,7 @@ async def update_project_endpoint(project_id: str, project_update: ProjectUpdate
 async def delete_project_endpoint(project_id: str):
     """프로젝트 삭제"""
     try:
-        func = _get_store_func("delete_project")
-        success = func(project_id)
+        success = storage.delete_project(project_id)
         
         if not success:
             raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
@@ -374,11 +328,7 @@ async def delete_project_endpoint(project_id: str):
 async def duplicate_project_endpoint(project_id: str, duplicate_data: ProjectDuplicate):
     """프로젝트 복제"""
     try:
-        if USE_MEMORY_STORE:
-            # 메모리 스토어는 아직 복제 기능 미구현
-            raise HTTPException(status_code=501, detail="메모리 스토어에서는 복제 기능을 사용할 수 없습니다")
-        else:
-            new_project = duplicate_project(project_id, duplicate_data.name, duplicate_data.copy_structure)
+        new_project = storage.duplicate_project(project_id, duplicate_data.name, duplicate_data.copy_structure)
         return {"project": new_project}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -392,12 +342,16 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
         from ai_service import generate_blocks, init_vertex_ai
         
         # Vertex AI 초기화
-        if not init_vertex_ai():
-            raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        try:
+            if not init_vertex_ai():
+                raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
         
         # 기존 카테고리 가져오기
-        get_categories_func = _get_store_func("get_categories")
-        existing_categories = get_categories_func(project_id)
+        existing_categories = storage.get_categories(project_id)
         
         # AI로 블록 생성
         generate_result = generate_blocks(
@@ -420,8 +374,7 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
         # project_analysis를 프로젝트에 저장
         if project_analysis:
             project_updates = {"project_analysis": project_analysis}
-            update_project_func = _get_store_func("update_project")
-            update_project_func(project_id, project_updates)
+            storage.update_project(project_id, project_updates)
             print(f"✅ 프로젝트 분석 저장 완료: {len(project_analysis)} 문자")
         
         # 생성된 블록들을 저장
@@ -435,9 +388,7 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
                 category=block_data.get("category")
             )
             
-            create_block_func = _get_store_func("create_block")
-            created_block = create_block_func(project_id, block_create.dict())
-            
+            created_block = storage.create_block(project_id, block_create.dict())
             created_blocks.append(created_block)
         
         # 새로 생성된 카테고리들을 프로젝트 카테고리 목록에 추가
@@ -448,8 +399,7 @@ async def ai_generate_blocks_endpoint(project_id: str, request: AIGenerateBlocks
         
         if new_categories:
             updated_categories = list(set(existing_categories) | new_categories)
-            update_categories_func = _get_store_func("update_categories")
-            update_categories_func(project_id, updated_categories)
+            storage.update_categories(project_id, updated_categories)
         
         return {"blocks": created_blocks}
     except ValueError as e:
@@ -464,12 +414,16 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
         from ai_service import arrange_blocks, init_vertex_ai
         
         # Vertex AI 초기화
-        if not init_vertex_ai():
-            raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        try:
+            if not init_vertex_ai():
+                raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
         
         # 배치할 블록들 가져오기
-        get_all_blocks_func = _get_store_func("get_all_blocks")
-        all_blocks = get_all_blocks_func(project_id)
+        all_blocks = storage.get_all_blocks(project_id)
         
         # 요청된 블록 ID들만 필터링
         blocks_to_arrange = [block for block in all_blocks if block.get("id") in request.block_ids]
@@ -478,8 +432,7 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
             raise HTTPException(status_code=400, detail="배치할 블록을 찾을 수 없습니다")
         
         # 프로젝트에서 저장된 project_analysis 가져오기
-        get_project_func = _get_store_func("get_project")
-        project = get_project_func(project_id)
+        project = storage.get_project(project_id)
         project_analysis = project.get("project_analysis") if project else None
         
         # AI로 블록 배치 (저장된 project_analysis 사용)
@@ -507,16 +460,13 @@ async def ai_arrange_blocks_endpoint(project_id: str, request: AIArrangeBlocksRe
             
             # 블록 업데이트
             updates = {"level": new_level}
-            update_block_func = _get_store_func("update_block")
-            updated_block = update_block_func(project_id, block_id, updates)
-            
+            updated_block = storage.update_block(project_id, block_id, updates)
             updated_blocks.append(updated_block)
         
         # 배치 이유를 프로젝트에 저장
         if arrangement_reasoning:
             project_updates = {"arrangement_reasoning": arrangement_reasoning}
-            update_project_func = _get_store_func("update_project")
-            update_project_func(project_id, project_updates)
+            storage.update_project(project_id, project_updates)
             print(f"✅ 배치 이유 프로젝트에 저장 완료: {len(arrangement_reasoning)} 문자")
         
         print(f"🔍 API 응답에 포함할 reasoning: {len(arrangement_reasoning)} 문자")

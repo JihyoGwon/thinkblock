@@ -61,7 +61,10 @@ def init_vertex_ai():
     from utils import find_credentials_file
     
     # .env 파일에서 환경 변수 가져오기
-    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or find_credentials_file()
+    env_cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    found_cred_path = find_credentials_file()
+    cred_path = env_cred_path or found_cred_path
+    
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("VERTEX_AI_LOCATION")
     
@@ -71,25 +74,79 @@ def init_vertex_ai():
     if not location:
         location = "asia-northeast3"
     
-    if cred_path and os.path.exists(cred_path):
+    # 경로 정규화 및 확인
+    if cred_path:
+        # 상대 경로인 경우 절대 경로로 변환
+        if not os.path.isabs(cred_path):
+            project_root = pathlib.Path(__file__).parent.parent
+            cred_path = str(project_root / cred_path)
+        
         # 절대 경로로 변환
         cred_path = str(pathlib.Path(cred_path).absolute())
-        # GOOGLE_APPLICATION_CREDENTIALS 환경 변수 설정 (Vertex AI가 자동으로 사용)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
         
-        vertexai.init(project=project_id, location=location)
-        print(f"✅ Vertex AI 초기화 완료: project={project_id}, location={location}, credentials={cred_path}")
-        return True
+        # 파일 존재 확인
+        if os.path.exists(cred_path):
+            # GOOGLE_APPLICATION_CREDENTIALS 환경 변수 설정 (Vertex AI가 자동으로 사용)
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
+            
+            try:
+                vertexai.init(project=project_id, location=location)
+                print(f"✅ Vertex AI 초기화 완료: project={project_id}, location={location}, credentials={cred_path}")
+                return True
+            except Exception as e:
+                error_msg = str(e)
+                print(f"❌ Vertex AI 초기화 실패: {error_msg}")
+                print(f"   인증 파일 경로: {cred_path}")
+                print(f"   파일 존재 여부: {os.path.exists(cred_path)}")
+                # 파일을 찾지 못하는 오류인 경우 더 명확한 메시지 제공
+                if "was not found" in error_msg or "not found" in error_msg.lower():
+                    raise FileNotFoundError(f"인증 파일을 찾을 수 없습니다: {cred_path}\n"
+                                          f"프로젝트 루트에 vertex-ai-thinkblock.json 파일이 있는지 확인하세요.")
+                raise
+        else:
+            # 파일이 존재하지 않는 경우
+            error_msg = f"인증 파일을 찾을 수 없습니다: {cred_path}"
+            print(f"❌ {error_msg}")
+            print(f"   프로젝트 루트: {pathlib.Path(__file__).parent.parent}")
+            print(f"   환경 변수 GOOGLE_APPLICATION_CREDENTIALS: {env_cred_path}")
+            print(f"   find_credentials_file() 결과: {found_cred_path}")
+            raise FileNotFoundError(f"{error_msg}\n프로젝트 루트에 vertex-ai-thinkblock.json 파일이 있는지 확인하세요.")
     else:
-        # 환경 변수만으로도 시도 (GCP 환경에서 실행 중일 경우)
+        # 인증 파일 경로를 찾지 못한 경우
+        # GCP 환경(Cloud Run 등)에서는 Service Account를 통해 자동 인증 가능
+        # 로컬 환경인지 확인 (GCP 환경 변수 확인)
+        is_gcp_env = (
+            os.getenv("K_SERVICE") is not None or  # Cloud Run
+            os.getenv("GAE_SERVICE") is not None or  # App Engine
+            os.getenv("GOOGLE_CLOUD_PROJECT") is not None  # GCP 프로젝트 환경 변수
+        )
+        
         try:
             vertexai.init(project=project_id, location=location)
-            print(f"✅ Vertex AI 초기화 완료 (환경 변수 사용): project={project_id}, location={location}")
+            if is_gcp_env:
+                print(f"✅ Vertex AI 초기화 완료 (GCP Service Account 사용): project={project_id}, location={location}")
+            else:
+                print(f"✅ Vertex AI 초기화 완료 (기본 인증 사용): project={project_id}, location={location}")
             return True
         except Exception as e:
-            print(f"⚠️  Vertex AI 초기화 실패: {e}")
-            print(f"   인증 파일 경로: {cred_path}")
-            return False
+            error_msg = str(e)
+            print(f"❌ Vertex AI 초기화 실패: {error_msg}")
+            print(f"   인증 파일 경로를 찾을 수 없습니다.")
+            print(f"   프로젝트 루트: {pathlib.Path(__file__).parent.parent}")
+            print(f"   환경 변수 GOOGLE_APPLICATION_CREDENTIALS: {env_cred_path}")
+            print(f"   find_credentials_file() 결과: {found_cred_path}")
+            print(f"   GCP 환경 여부: {is_gcp_env}")
+            
+            # GCP 환경이 아닌 경우에만 FileNotFoundError 발생
+            # GCP 환경에서는 Service Account를 통해 인증할 수 있어야 함
+            if not is_gcp_env:
+                # 파일을 찾지 못하는 오류인 경우 더 명확한 메시지 제공
+                if "was not found" in error_msg or "not found" in error_msg.lower():
+                    raise FileNotFoundError(f"인증 파일을 찾을 수 없습니다.\n"
+                                          f"프로젝트 루트({pathlib.Path(__file__).parent.parent})에 vertex-ai-thinkblock.json 파일이 있는지 확인하세요.\n"
+                                          f"또는 환경 변수 GOOGLE_APPLICATION_CREDENTIALS를 설정하세요.")
+            # GCP 환경에서도 실패한 경우는 다른 인증 오류일 수 있음
+            raise
 
 def generate_blocks(
     project_overview: str,
