@@ -30,8 +30,10 @@ export const useBlocks = (projectId: string | undefined) => {
     fetchBlocks();
   }, [fetchBlocks]);
 
-  const createBlock = useCallback(async (blockData: Omit<BlockType, 'id'>) => {
-    if (!projectId) return;
+  const createBlock = useCallback(async (blockData: Omit<BlockType, 'id'>): Promise<BlockType> => {
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
     try {
       const newBlock = await api.createBlock(projectId, blockData);
       setBlocks((prev) => [...prev, newBlock]);
@@ -42,8 +44,10 @@ export const useBlocks = (projectId: string | undefined) => {
     }
   }, [projectId]);
 
-  const updateBlock = useCallback(async (blockId: string, updates: Partial<BlockType>) => {
-    if (!projectId) return;
+  const updateBlock = useCallback(async (blockId: string, updates: Partial<BlockType>): Promise<BlockType> => {
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
     try {
       const updatedBlock = await api.updateBlock(projectId, blockId, updates);
       setBlocks((prev) => prev.map((b) => (b.id === blockId ? updatedBlock : b)));
