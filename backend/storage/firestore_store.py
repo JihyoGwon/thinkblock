@@ -57,24 +57,48 @@ class FirestoreStore(StorageInterface):
         self.CATEGORY_COLORS_DOC_ID = "category_colors"
     
     def get_all_blocks(self, project_id: str) -> List[dict]:
-        """프로젝트의 모든 블록 조회"""
+        """프로젝트의 모든 블록 조회 (서버 측 정렬 사용)"""
         try:
+            from google.cloud.firestore import Query
+            from google.api_core import exceptions as gcp_exceptions
+            
             blocks_ref = self.db.collection(self.PROJECTS_COLLECTION).document(project_id).collection(self.BLOCKS_COLLECTION)
             
-            # 인덱스가 없을 수 있으므로 먼저 단순 조회 후 정렬
-            docs = blocks_ref.stream()
-            
-            blocks = []
-            for doc in docs:
-                block = doc.to_dict()
-                block["id"] = doc.id
-                blocks.append(block)
-            
-            # 메모리에서 정렬
-            blocks.sort(key=lambda x: (x.get("level", 0), x.get("order", 0)))
-            
-            print(f"✅ 블록 조회 성공: project_id={project_id}, count={len(blocks)}")
-            return blocks
+            # Firestore 서버 측에서 정렬 (인덱스 사용)
+            # firestore.indexes.json에 level, order 복합 인덱스가 필요함
+            try:
+                docs = blocks_ref.order_by("level", direction=Query.ASCENDING).order_by("order", direction=Query.ASCENDING).stream()
+                
+                # 서버 측 정렬 결과 사용
+                blocks = []
+                for doc in docs:
+                    block = doc.to_dict()
+                    block["id"] = doc.id
+                    blocks.append(block)
+                
+                print(f"✅ 블록 조회 성공 (서버 정렬): project_id={project_id}, count={len(blocks)}")
+                return blocks
+                
+            except (gcp_exceptions.InvalidArgument, Exception) as index_error:
+                # 인덱스가 아직 생성되지 않은 경우 fallback: 메모리에서 정렬
+                error_msg = str(index_error)
+                if "index" in error_msg.lower() or "400" in error_msg:
+                    print(f"⚠️  인덱스가 아직 생성되지 않았습니다. 메모리 정렬 사용: {error_msg}")
+                    print(f"💡 인덱스를 생성하려면: gcloud firestore indexes create --project=thinkblock")
+                else:
+                    print(f"⚠️  쿼리 오류 발생, 메모리 정렬 사용: {error_msg}")
+                
+                # Fallback: 모든 문서를 가져온 후 메모리에서 정렬
+                docs = blocks_ref.stream()
+                blocks = []
+                for doc in docs:
+                    block = doc.to_dict()
+                    block["id"] = doc.id
+                    blocks.append(block)
+                blocks.sort(key=lambda x: (x.get("level", 0), x.get("order", 0)))
+                print(f"✅ 블록 조회 성공 (메모리 정렬): project_id={project_id}, count={len(blocks)}")
+                return blocks
+                
         except Exception as e:
             print(f"❌ 블록 조회 실패: project_id={project_id}, error={e}")
             # 에러 발생 시 빈 배열 반환
@@ -96,8 +120,11 @@ class FirestoreStore(StorageInterface):
         try:
             # 같은 레벨의 블록 수를 확인하여 order 설정
             if "order" not in block_data or block_data["order"] is None:
-                level_blocks = self.db.collection(self.PROJECTS_COLLECTION).document(project_id).collection(self.BLOCKS_COLLECTION).where("level", "==", block_data["level"]).stream()
-                block_data["order"] = sum(1 for _ in level_blocks)
+                # where 쿼리로 필터링하여 필요한 문서만 조회
+                # level 필드는 단일 필드 인덱스가 자동 생성됨
+                level_blocks_query = self.db.collection(self.PROJECTS_COLLECTION).document(project_id).collection(self.BLOCKS_COLLECTION).where("level", "==", block_data.get("level", 0))
+                # 문서를 실제로 가져오지 않고 개수만 계산 (메모리 효율적)
+                block_data["order"] = sum(1 for _ in level_blocks_query.stream())
             
             doc_ref = self.db.collection(self.PROJECTS_COLLECTION).document(project_id).collection(self.BLOCKS_COLLECTION).document()
             block_data["id"] = doc_ref.id

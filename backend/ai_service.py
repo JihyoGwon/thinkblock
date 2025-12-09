@@ -33,23 +33,95 @@ def _parse_ai_response(response_text: str) -> Dict:
     Raises:
         ValueError: JSON 파싱 실패 시
     """
+    import re
+    
     text = response_text.strip()
     
     # 디버깅: 원본 응답 출력
-    print(f"🔍 AI 원본 응답:\n{text[:1000]}")
+    print(f"🔍 AI 원본 응답 (처음 2000자):\n{text[:2000]}")
     
     # JSON 추출 (마크다운 코드 블록 제거)
     if "```json" in text:
-        text = text.split("```json")[1].split("```")[0].strip()
+        # ```json ... ``` 패턴 찾기
+        json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+        if json_match:
+            text = json_match.group(1).strip()
+        else:
+            # fallback: 첫 번째 ```json 이후부터 찾기
+            text = text.split("```json")[1].split("```")[0].strip()
     elif "```" in text:
-        text = text.split("```")[1].split("```")[0].strip()
+        # 일반 코드 블록에서 JSON 추출
+        code_match = re.search(r'```\s*(.*?)\s*```', text, re.DOTALL)
+        if code_match:
+            text = code_match.group(1).strip()
+            # json 키워드가 있으면 제거
+            if text.startswith("json"):
+                text = text[4:].strip()
+        else:
+            # fallback
+            text = text.split("```")[1].split("```")[0].strip()
+    
+    # JSON 객체 찾기 (중괄호로 시작하는 부분)
+    if not text.startswith("{"):
+        # 첫 번째 { 찾기
+        start_idx = text.find("{")
+        if start_idx != -1:
+            text = text[start_idx:]
+        else:
+            raise ValueError("JSON 객체를 찾을 수 없습니다 (중괄호 없음)")
+    
+    # 마지막 } 찾기 (중첩된 중괄호 고려)
+    brace_count = 0
+    end_idx = -1
+    for i, char in enumerate(text):
+        if char == "{":
+            brace_count += 1
+        elif char == "}":
+            brace_count -= 1
+            if brace_count == 0:
+                end_idx = i + 1
+                break
+    
+    if end_idx != -1:
+        text = text[:end_idx]
+    else:
+        # }를 찾지 못한 경우, 마지막 } 사용
+        last_brace = text.rfind("}")
+        if last_brace != -1:
+            text = text[:last_brace + 1]
+    
+    # 불필요한 공백 및 줄바꿈 정리
+    text = text.strip()
     
     # JSON 파싱
     try:
-        return json.loads(text)
+        parsed = json.loads(text)
+        print(f"✅ JSON 파싱 성공")
+        return parsed
     except json.JSONDecodeError as e:
         print(f"❌ JSON 파싱 실패: {e}")
-        print(f"파싱 시도한 텍스트: {text[:500]}")
+        print(f"파싱 시도한 텍스트 (처음 1000자):\n{text[:1000]}")
+        print(f"파싱 시도한 텍스트 (오류 위치 주변):")
+        error_pos = e.pos if hasattr(e, 'pos') else 0
+        start = max(0, error_pos - 200)
+        end = min(len(text), error_pos + 200)
+        print(f"{text[start:end]}")
+        print(f"오류 위치: {error_pos}")
+        
+        # 부분 복구 시도: 마지막 불완전한 항목 제거
+        if "arrangements" in text and text.count("[") > 0:
+            try:
+                # arrangements 배열의 마지막 불완전한 항목 제거 시도
+                last_comma = text.rfind(",")
+                if last_comma != -1:
+                    # 마지막 쉼표 이후 부분 제거 시도
+                    text_fixed = text[:last_comma] + "\n  ]\n}"
+                    parsed = json.loads(text_fixed)
+                    print(f"⚠️  부분 복구 성공 (마지막 항목 제거)")
+                    return parsed
+            except:
+                pass
+        
         raise ValueError(f"AI 응답을 파싱할 수 없습니다: {str(e)}")
 
 # .env 파일 로드

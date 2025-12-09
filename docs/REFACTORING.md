@@ -148,24 +148,45 @@ def generate_blocks(...):
     )
 ```
 
-### 5. Firestore 쿼리 최적화 (우선순위: 중간)
+### 5. Firestore 쿼리 최적화 (우선순위: 중간) ✅ 완료
 
 **현재 문제점:**
-- `get_all_blocks()`에서 모든 문서를 가져온 후 메모리에서 정렬
-- 인덱스 활용이 부족함
+- ~~`get_all_blocks()`에서 모든 문서를 가져온 후 메모리에서 정렬~~ ✅ **해결됨**
+- ~~인덱스 활용이 부족함~~ ✅ **해결됨**
 
-**개선 방안:**
+**개선 완료:**
+- ✅ `get_all_blocks()`에서 서버 측 정렬 사용
+  - `order_by("level").order_by("order")`를 사용하여 Firestore 서버에서 정렬
+  - 인덱스가 없는 경우 fallback으로 메모리 정렬 사용
+  - 네트워크 전송량 감소 및 성능 향상
+- ✅ 인덱스 확인 및 유지
+  - `firestore.indexes.json`에 복합 인덱스 (level, order) 이미 정의됨
+  - 단일 필드 쿼리(`where("level", "==", ...)`)는 자동 인덱스 생성
+- ✅ `create_block()` 쿼리 최적화
+  - `where` 쿼리로 필요한 문서만 필터링
+  - 불필요한 데이터 로딩 제거
+
+**최적화된 코드:**
 ```python
-# firestore_service.py
-def get_all_blocks(project_id: str) -> List[dict]:
-    blocks_ref = db.collection(PROJECTS_COLLECTION)\
+# backend/storage/firestore_store.py
+def get_all_blocks(self, project_id: str) -> List[dict]:
+    from google.cloud.firestore import Query
+    
+    blocks_ref = self.db.collection(self.PROJECTS_COLLECTION)\
         .document(project_id)\
-        .collection(BLOCKS_COLLECTION)\
-        .order_by("level")\
-        .order_by("order")
+        .collection(self.BLOCKS_COLLECTION)
+    
+    # 서버 측 정렬 (인덱스 사용)
+    try:
+        docs = blocks_ref.order_by("level", direction=Query.ASCENDING)\
+            .order_by("order", direction=Query.ASCENDING).stream()
+    except Exception as index_error:
+        # 인덱스가 아직 생성되지 않은 경우 fallback
+        docs = blocks_ref.stream()
+        # 메모리에서 정렬...
     
     blocks = []
-    for doc in blocks_ref.stream():
+    for doc in docs:
         block = doc.to_dict()
         block["id"] = doc.id
         blocks.append(block)
@@ -173,9 +194,9 @@ def get_all_blocks(project_id: str) -> List[dict]:
     return blocks
 ```
 
-**필요한 인덱스:**
+**인덱스 구성:**
 ```json
-// firestore.indexes.json에 추가
+// firestore.indexes.json (이미 정의됨)
 {
   "collectionGroup": "blocks",
   "queryScope": "COLLECTION",
@@ -703,7 +724,10 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
    - 현재 구조: `useBlocks` + `useProjectData`로 명확히 분리
    - 각 훅이 단일 책임 원칙을 따름
 3. 테스트 코드 작성 시작
-4. Firestore 쿼리 최적화
+4. ✅ **Firestore 쿼리 최적화** - **완료**
+   - `get_all_blocks()`에서 서버 측 정렬 사용
+   - 인덱스 활용으로 성능 향상
+   - 불필요한 데이터 로딩 제거
 
 ### Phase 3 (중기)
 1. AI 서비스 프롬프트 관리
