@@ -79,7 +79,6 @@ export const ProjectPage: React.FC = () => {
   } = useConnectionMode({
     projectId,
     fetchBlocks,
-    dependencyColors,
     setDependencyColors,
   });
 
@@ -96,7 +95,6 @@ export const ProjectPage: React.FC = () => {
   } = useDragMode({
     blocks,
     updateBlock,
-    fetchBlocks,
   });
 
   // mode를 포함한 래퍼 함수들 (mode 상태 정의 후)

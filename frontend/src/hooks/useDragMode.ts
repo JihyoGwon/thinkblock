@@ -8,14 +8,12 @@ import { handleError } from '../utils/errorHandler';
 
 interface UseDragModeProps {
   blocks: BlockType[];
-  updateBlock: (blockId: string, updates: Partial<BlockType>) => Promise<void>;
-  fetchBlocks: () => Promise<void>;
+  updateBlock: (blockId: string, updates: Partial<BlockType>) => Promise<BlockType>;
 }
 
 export const useDragMode = ({
   blocks,
   updateBlock,
-  fetchBlocks,
 }: UseDragModeProps) => {
   const [draggedBlockId, setDraggedBlockId] = useState<string | null>(null);
   const [dragOverLevel, setDragOverLevel] = useState<number | null>(null);

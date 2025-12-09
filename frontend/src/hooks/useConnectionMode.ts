@@ -10,14 +10,12 @@ import { logger } from '../utils/logger';
 interface UseConnectionModeProps {
   projectId: string | undefined;
   fetchBlocks: () => Promise<void>;
-  dependencyColors: Record<string, string>;
   setDependencyColors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 export const useConnectionMode = ({
   projectId,
   fetchBlocks,
-  dependencyColors,
   setDependencyColors,
 }: UseConnectionModeProps) => {
   const [connectingFromBlockId, setConnectingFromBlockId] = useState<string | null>(null);
