@@ -248,28 +248,19 @@ frontend/src/
 - `useConnectionColors` 훅 생성 (연결선 색상 관리 분리)
 - 각 기능별로 책임 분리하여 유지보수성 향상
 
-### 2. 커스텀 훅 통합 (우선순위: 중간)
+### 2. 커스텀 훅 통합 (우선순위: 중간) ✅ 완료
 
 **현재 문제점:**
-- `useProject.ts`와 `useProjectData.ts`가 중복 기능 제공
-- `useProject.ts`가 사용되지 않는 것으로 보임
+- ~~`useProject.ts`와 `useProjectData.ts`가 중복 기능 제공~~ ✅ **해결됨**
+- ~~`useProject.ts`가 사용되지 않는 것으로 보임~~ ✅ **해결됨**
 
-**개선 방안:**
-```typescript
-// hooks/useProject.ts 통합
-export const useProject = (projectId: string | undefined) => {
-  const { blocks, ... } = useBlocks(projectId);
-  const { categories, categoryColors, project, ... } = useProjectData(projectId);
-  
-  return {
-    blocks,
-    categories,
-    categoryColors,
-    project,
-    // ...
-  };
-};
-```
+**개선 완료:**
+- ✅ `useProject.ts` 제거 (사용되지 않는 레거시 코드)
+- ✅ 현재 구조:
+  - `useBlocks` - 블록 관련 로직 (CRUD)
+  - `useProjectData` - 프로젝트 데이터 관련 로직 (카테고리, 프로젝트 정보)
+  - 각 훅이 명확한 책임을 가짐
+- ✅ 중복 제거 및 코드베이스 정리 완료
 
 ### 3. API 서비스 에러 처리 개선 (우선순위: 중간)
 
@@ -705,7 +696,10 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 
 ### Phase 2 (단기)
 1. 에러 처리 통합
-2. 커스텀 훅 통합
+2. ✅ **커스텀 훅 통합** - **완료**
+   - `useProject.ts` 제거 (사용되지 않는 레거시 코드)
+   - 현재 구조: `useBlocks` + `useProjectData`로 명확히 분리
+   - 각 훅이 단일 책임 원칙을 따름
 3. 테스트 코드 작성 시작
 4. Firestore 쿼리 최적화
 
