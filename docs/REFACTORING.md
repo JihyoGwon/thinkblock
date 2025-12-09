@@ -218,53 +218,35 @@ async def create_block(
 
 ## 프론트엔드 리팩토링
 
-### 1. App.tsx 컴포넌트 분리 (우선순위: 높음)
+### 1. App.tsx 컴포넌트 분리 (우선순위: 높음) ✅ 완료
 
 **현재 문제점:**
-- `App.tsx`가 1173줄로 너무 큼
-- 단일 책임 원칙 위반
-- 유지보수가 어려움
+- ~~`App.tsx`가 1173줄로 너무 큼~~ ✅ **해결됨**
+- ~~단일 책임 원칙 위반~~ ✅ **해결됨**
+- ~~유지보수가 어려움~~ ✅ **해결됨**
 
-**개선 방안:**
+**개선 완료:**
 ```
 frontend/src/
-├── App.tsx                    # 라우팅만 담당
+├── App.tsx                    # 라우팅만 담당 (약 10줄)
 ├── pages/
-│   └── ProjectPage.tsx        # 프로젝트 페이지 (현재 App.tsx 내용)
+│   └── ProjectPage.tsx        # 프로젝트 페이지 (메인 로직)
 ├── components/
-│   ├── ProjectHeader.tsx      # 헤더 영역
-│   ├── ProjectView.tsx        # 메인 뷰 영역
-│   └── ProjectModals.tsx      # 모달 관리
+│   └── ProjectHeader.tsx      # 헤더 영역
 └── hooks/
     ├── useConnectionMode.ts   # 연결선 모드 로직
-    └── useDragMode.ts         # 드래그 모드 로직
+    ├── useDragMode.ts         # 드래그 모드 로직
+    └── useConnectionColors.ts # 연결선 색상 관리
 ```
 
-**예시:**
-```typescript
-// components/ProjectHeader.tsx
-export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
-  project,
-  onProjectNameEdit,
-  // ...
-}) => {
-  // 헤더 관련 로직만
-};
-
-// pages/ProjectPage.tsx
-export const ProjectPage: React.FC = () => {
-  const { projectId } = useParams();
-  const { blocks, ... } = useBlocks(projectId);
-  
-  return (
-    <div>
-      <ProjectHeader {...headerProps} />
-      <ProjectView {...viewProps} />
-      <ProjectModals {...modalProps} />
-    </div>
-  );
-};
-```
+**구현 내용:**
+- `App.tsx`를 1173줄 → 약 10줄로 간소화
+- `ProjectPage` 컴포넌트 생성 (메인 프로젝트 뷰)
+- `ProjectHeader` 컴포넌트 생성 (헤더 영역)
+- `useConnectionMode` 훅 생성 (연결선 모드 로직 분리)
+- `useDragMode` 훅 생성 (드래그 모드 로직 분리)
+- `useConnectionColors` 훅 생성 (연결선 색상 관리 분리)
+- 각 기능별로 책임 분리하여 유지보수성 향상
 
 ### 2. 커스텀 훅 통합 (우선순위: 중간)
 
@@ -694,7 +676,13 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
 ## 우선순위별 실행 계획
 
 ### Phase 1 (즉시 실행)
-1. ⏳ App.tsx 컴포넌트 분리
+1. ✅ **App.tsx 컴포넌트 분리** - **완료**
+   - `pages/ProjectPage.tsx` 생성 (메인 프로젝트 뷰)
+   - `components/ProjectHeader.tsx` 생성 (헤더 영역)
+   - `hooks/useConnectionMode.ts` 생성 (연결선 모드 로직)
+   - `hooks/useDragMode.ts` 생성 (드래그 모드 로직)
+   - `hooks/useConnectionColors.ts` 생성 (연결선 색상 관리)
+   - `App.tsx` 간소화 (1173줄 → 약 10줄)
 2. ✅ **API 라우터 분리** - **완료**
    - `backend/models.py` 생성 (공통 모델 정의)
    - `backend/routers/` 디렉토리 생성
