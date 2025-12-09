@@ -1,9 +1,10 @@
 """
 의존성 관련 API 엔드포인트
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from models import DependencyRequest
 from storage import get_storage
+from exceptions import BlockNotFoundError, StorageError
 
 router = APIRouter(prefix="/api/projects/{project_id}", tags=["dependencies"])
 
@@ -15,7 +16,7 @@ async def add_dependency(project_id: str, block_id: str, request: DependencyRequ
         storage = get_storage()
         block = storage.get_block(project_id, block_id)
         if not block:
-            raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            raise BlockNotFoundError(block_id)
         
         dependencies = block.get("dependencies", [])
         if request.dependency_id not in dependencies:
@@ -28,10 +29,10 @@ async def add_dependency(project_id: str, block_id: str, request: DependencyRequ
         
         updated_block = storage.get_block(project_id, block_id)
         return {"block": updated_block}
-    except HTTPException:
+    except BlockNotFoundError:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"의존성 추가 실패: {str(e)}")
+        raise StorageError(f"의존성 추가 실패: {str(e)}")
 
 
 @router.delete("/blocks/{block_id}/dependencies/{dependency_id}")
@@ -41,7 +42,7 @@ async def remove_dependency(project_id: str, block_id: str, dependency_id: str):
         storage = get_storage()
         block = storage.get_block(project_id, block_id)
         if not block:
-            raise HTTPException(status_code=404, detail="블록을 찾을 수 없습니다")
+            raise BlockNotFoundError(block_id)
         
         dependencies = block.get("dependencies", [])
         if dependency_id in dependencies:
@@ -52,10 +53,10 @@ async def remove_dependency(project_id: str, block_id: str, dependency_id: str):
         
         updated_block = storage.get_block(project_id, block_id)
         return {"block": updated_block}
-    except HTTPException:
+    except BlockNotFoundError:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"의존성 제거 실패: {str(e)}")
+        raise StorageError(f"의존성 제거 실패: {str(e)}")
 
 
 @router.get("/dependency-colors")
@@ -66,5 +67,5 @@ async def get_dependency_colors(project_id: str):
         colors = storage.get_dependency_colors(project_id)
         return {"colors": colors}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"의존성 색상 조회 실패: {str(e)}")
+        raise StorageError(f"의존성 색상 조회 실패: {str(e)}")
 

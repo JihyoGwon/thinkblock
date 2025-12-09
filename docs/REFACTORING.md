@@ -93,32 +93,30 @@ storage = get_storage()  # 전역 인스턴스
 blocks = storage.get_all_blocks(project_id)  # ✅ 타입 안전, 명확함
 ```
 
-### 3. 에러 처리 통합 (우선순위: 중간)
+### 3. 에러 처리 통합 (우선순위: 중간) ✅ 완료
 
 **현재 문제점:**
-- 각 엔드포인트마다 동일한 에러 처리 패턴이 반복됨
-- 에러 메시지가 일관되지 않음
+- ~~각 엔드포인트마다 동일한 에러 처리 패턴이 반복됨~~ ✅ **해결됨**
+- ~~에러 메시지가 일관되지 않음~~ ✅ **해결됨**
 
-**개선 방안:**
-```python
-# exceptions.py
-class BlockNotFoundError(Exception):
-    pass
-
-class ProjectNotFoundError(Exception):
-    pass
-
-# middleware/error_handler.py
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-@app.exception_handler(BlockNotFoundError)
-async def block_not_found_handler(request: Request, exc: BlockNotFoundError):
-    return JSONResponse(
-        status_code=404,
-        content={"detail": "블록을 찾을 수 없습니다"}
-    )
-```
+**개선 완료:**
+- ✅ 백엔드 커스텀 예외 클래스 생성 (`exceptions.py`)
+  - `BaseAPIException`: 기본 예외 클래스
+  - `NotFoundError`, `BlockNotFoundError`, `ProjectNotFoundError`: 리소스 없음 예외
+  - `ValidationError`: 입력값 검증 실패 예외
+  - `AIServiceError`: AI 서비스 오류 예외
+  - `StorageError`: 저장소 오류 예외
+- ✅ 통합 에러 핸들러 생성 (`middleware/error_handler.py`)
+  - 각 예외 타입별 핸들러 등록
+  - FastAPI `RequestValidationError` 처리
+  - 일반 예외 처리 (마지막 방어선)
+  - 개발/프로덕션 환경별 에러 정보 표시
+- ✅ 모든 라우터에서 커스텀 예외 사용
+  - `HTTPException` 대신 커스텀 예외 사용
+  - 일관된 에러 메시지 및 상태 코드
+- ✅ 프론트엔드 API 에러 처리 개선
+  - 모든 API 함수에서 일관된 에러 처리
+  - `handleApiError` 함수 활용
 
 ### 4. AI 서비스 프롬프트 관리 (우선순위: 중간)
 
@@ -695,7 +693,11 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
    - 개발 환경에서만 로그 출력, 프로덕션에서는 출력 안 함
 
 ### Phase 2 (단기)
-1. 에러 처리 통합
+1. ✅ **에러 처리 통합** - **완료**
+   - 백엔드 커스텀 예외 클래스 생성 (`exceptions.py`)
+   - 통합 에러 핸들러 생성 (`middleware/error_handler.py`)
+   - 모든 라우터에서 커스텀 예외 사용
+   - 프론트엔드 API 에러 처리 일관성 개선
 2. ✅ **커스텀 훅 통합** - **완료**
    - `useProject.ts` 제거 (사용되지 않는 레거시 코드)
    - 현재 구조: `useBlocks` + `useProjectData`로 명확히 분리

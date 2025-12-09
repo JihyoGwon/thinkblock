@@ -1,9 +1,10 @@
 """
 프로젝트 관련 API 엔드포인트
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from models import ProjectCreate, ProjectUpdate, ProjectDuplicate
 from storage import get_storage
+from exceptions import ProjectNotFoundError, StorageError, ValidationError
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -18,7 +19,7 @@ async def create_project(project: ProjectCreate):
         created_project = storage.create_project(project.name)
         return {"project": created_project}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 생성 실패: {str(e)}")
+        raise StorageError(f"프로젝트 생성 실패: {str(e)}")
 
 
 @router.get("")
@@ -28,7 +29,7 @@ async def get_all_projects():
         projects = storage.get_all_projects()
         return {"projects": projects}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+        raise StorageError(f"프로젝트 조회 실패: {str(e)}")
 
 
 @router.get("/{project_id}")
@@ -38,13 +39,13 @@ async def get_project(project_id: str):
         project = storage.get_project(project_id)
         
         if project is None:
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise ProjectNotFoundError(project_id)
         
         return {"project": project}
-    except HTTPException:
+    except ProjectNotFoundError:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 조회 실패: {str(e)}")
+        raise StorageError(f"프로젝트 조회 실패: {str(e)}")
 
 
 @router.put("/{project_id}")
@@ -55,13 +56,13 @@ async def update_project(project_id: str, project_update: ProjectUpdate):
         updated_project = storage.update_project(project_id, updates)
         
         if updated_project is None:
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise ProjectNotFoundError(project_id)
         
         return {"project": updated_project}
-    except HTTPException:
+    except ProjectNotFoundError:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 업데이트 실패: {str(e)}")
+        raise StorageError(f"프로젝트 업데이트 실패: {str(e)}")
 
 
 @router.delete("/{project_id}")
@@ -71,13 +72,13 @@ async def delete_project(project_id: str):
         success = storage.delete_project(project_id)
         
         if not success:
-            raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다")
+            raise ProjectNotFoundError(project_id)
         
         return {"message": "프로젝트가 삭제되었습니다", "project_id": project_id}
-    except HTTPException:
+    except ProjectNotFoundError:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 삭제 실패: {str(e)}")
+        raise StorageError(f"프로젝트 삭제 실패: {str(e)}")
 
 
 @router.post("/{project_id}/duplicate")
@@ -87,7 +88,7 @@ async def duplicate_project(project_id: str, duplicate_data: ProjectDuplicate):
         new_project = storage.duplicate_project(project_id, duplicate_data.name, duplicate_data.copy_structure)
         return {"project": new_project}
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise ValidationError(str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"프로젝트 복제 실패: {str(e)}")
+        raise StorageError(f"프로젝트 복제 실패: {str(e)}")
 

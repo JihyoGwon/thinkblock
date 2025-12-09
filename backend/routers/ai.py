@@ -1,10 +1,11 @@
 """
 AI 관련 API 엔드포인트
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from models import AIGenerateBlocksRequest, AIArrangeBlocksRequest, BlockCreate
 from storage import get_storage
 from ai_service import generate_blocks, arrange_blocks, init_vertex_ai
+from exceptions import AIServiceError, ValidationError
 
 router = APIRouter(prefix="/api/projects/{project_id}/ai", tags=["ai"])
 
@@ -19,11 +20,11 @@ async def ai_generate_blocks(project_id: str, request: AIGenerateBlocksRequest):
         # Vertex AI 초기화
         try:
             if not init_vertex_ai():
-                raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+                raise AIServiceError("Vertex AI 초기화 실패")
         except FileNotFoundError as e:
-            raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
+            raise AIServiceError(f"AI 블록 생성 실패: {str(e)}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
+            raise AIServiceError(f"AI 블록 생성 실패: {str(e)}")
         
         # 기존 카테고리 가져오기
         existing_categories = storage.get_categories(project_id)
@@ -77,10 +78,12 @@ async def ai_generate_blocks(project_id: str, request: AIGenerateBlocksRequest):
             storage.update_categories(project_id, updated_categories)
         
         return {"blocks": created_blocks}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValidationError:
+        raise
+    except AIServiceError:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI 블록 생성 실패: {str(e)}")
+        raise AIServiceError(f"AI 블록 생성 실패: {str(e)}")
 
 
 @router.post("/arrange-blocks")
@@ -90,11 +93,11 @@ async def ai_arrange_blocks(project_id: str, request: AIArrangeBlocksRequest):
         # Vertex AI 초기화
         try:
             if not init_vertex_ai():
-                raise HTTPException(status_code=500, detail="Vertex AI 초기화 실패")
+                raise AIServiceError("Vertex AI 초기화 실패")
         except FileNotFoundError as e:
-            raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
+            raise AIServiceError(f"AI 블록 배치 실패: {str(e)}")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
+            raise AIServiceError(f"AI 블록 배치 실패: {str(e)}")
         
         # 배치할 블록들 가져오기
         all_blocks = storage.get_all_blocks(project_id)
@@ -103,7 +106,7 @@ async def ai_arrange_blocks(project_id: str, request: AIArrangeBlocksRequest):
         blocks_to_arrange = [block for block in all_blocks if block.get("id") in request.block_ids]
         
         if not blocks_to_arrange:
-            raise HTTPException(status_code=400, detail="배치할 블록을 찾을 수 없습니다")
+            raise ValidationError("배치할 블록을 찾을 수 없습니다")
         
         # 프로젝트에서 저장된 project_analysis 가져오기
         project = storage.get_project(project_id)
@@ -145,10 +148,12 @@ async def ai_arrange_blocks(project_id: str, request: AIArrangeBlocksRequest):
         
         print(f"🔍 API 응답에 포함할 reasoning: {len(arrangement_reasoning)} 문자")
         return {"blocks": updated_blocks, "reasoning": arrangement_reasoning}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValidationError:
+        raise
+    except AIServiceError:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"AI 블록 배치 실패: {str(e)}")
+        raise AIServiceError(f"AI 블록 배치 실패: {str(e)}")
 

@@ -10,10 +10,14 @@ from dotenv import load_dotenv
 
 # 라우터 임포트
 from routers import blocks, projects, categories, dependencies, ai
+from middleware.error_handler import register_error_handlers
 
 load_dotenv()
 
 app = FastAPI(title="ThinkBlock API")
+
+# 에러 핸들러 등록
+register_error_handlers(app)
 
 # CORS 설정
 # 프로덕션에서는 환경 변수로 관리하거나 특정 도메인만 허용

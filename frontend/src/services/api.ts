@@ -95,8 +95,13 @@ export const api = {
 
   // 프로젝트 관련
   getProjects: async (): Promise<any[]> => {
-    const response = await apiClient.get(`${API_BASE_URL}/api/projects`);
-    return response.data?.projects || [];
+    try {
+      const response = await apiClient.get(`${API_BASE_URL}/api/projects`);
+      return response.data?.projects || [];
+    } catch (error) {
+      logger.error('프로젝트 목록 조회 실패:', error);
+      return [];
+    }
   },
 
   getProject: async (projectId: string): Promise<any> => {
@@ -135,11 +140,15 @@ export const api = {
   },
 
   duplicateProject: async (projectId: string, name: string, copyStructure: boolean): Promise<any> => {
-    const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/duplicate`, {
-      name,
-      copy_structure: copyStructure,
-    });
-    return response.data.project;
+    try {
+      const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/duplicate`, {
+        name,
+        copy_structure: copyStructure,
+      });
+      return response.data.project;
+    } catch (error) {
+      return handleApiError(error, '프로젝트 복제에 실패했습니다.');
+    }
   },
 
   // AI 블록 생성
