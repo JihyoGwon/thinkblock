@@ -4,10 +4,11 @@ interface BlockInputProps {
   onSubmit: (title: string) => void;
   onAIClick?: () => void;
   onAIArrangeClick?: () => void;
+  onAIFeedbackClick?: () => void;
   projectId?: string; // 향후 사용 예정
 }
 
-export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onAIArrangeClick }) => {
+export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onAIArrangeClick, onAIFeedbackClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAIMenu, setShowAIMenu] = useState(false);
   const [title, setTitle] = useState('');
@@ -170,6 +171,34 @@ export const BlockInput: React.FC<BlockInputProps> = ({ onSubmit, onAIClick, onA
                       }}
                     >
                       블록 배치
+                    </button>
+                  )}
+                  {onAIFeedbackClick && (
+                    <button
+                      onClick={() => {
+                        setShowAIMenu(false);
+                        onAIFeedbackClick();
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: '#212529',
+                        transition: 'background-color 0.2s',
+                        borderTop: '1px solid #e9ecef',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f8f9fa';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      피드백
                     </button>
                   )}
                 </div>

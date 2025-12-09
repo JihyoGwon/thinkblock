@@ -9,6 +9,7 @@ interface LeftPanelProps {
   onQuickCreate: (title: string) => void;
   onAIClick: () => void;
   onAIArrangeClick: () => void;
+  onAIFeedbackClick?: () => void;
   onBlockDelete: (blockId: string) => void;
   onBlockEdit: (block: BlockType) => void;
   isConnectionMode?: boolean;
@@ -29,6 +30,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
   onQuickCreate,
   onAIClick,
   onAIArrangeClick,
+  onAIFeedbackClick,
   onBlockDelete,
   onBlockEdit,
   isConnectionMode = false,
@@ -60,6 +62,7 @@ export const LeftPanel: React.FC<LeftPanelProps> = ({
         onSubmit={onQuickCreate} 
         onAIClick={onAIClick} 
         onAIArrangeClick={onAIArrangeClick}
+        onAIFeedbackClick={onAIFeedbackClick}
       />
       <BlockList
         blocks={blocks}

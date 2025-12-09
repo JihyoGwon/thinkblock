@@ -17,6 +17,7 @@ import { CategoryManager } from '../components/CategoryManager';
 import { ProjectHeader } from '../components/ProjectHeader';
 import { AIGenerateBlocksModal } from '../components/AIGenerateBlocksModal';
 import { AIArrangeBlocksModal } from '../components/AIArrangeBlocksModal';
+import { AIFeedbackModal } from '../components/AIFeedbackModal';
 import { ArrangementReasoningModal } from '../components/ArrangementReasoningModal';
 import { useBlocks } from '../hooks/useBlocks';
 import { useProjectData } from '../hooks/useProjectData';
@@ -25,6 +26,7 @@ import { useDragMode } from '../hooks/useDragMode';
 import { useConnectionColors } from '../hooks/useConnectionColors';
 import { groupBlocksByLevel, calculateMaxLevel } from '../utils/blockUtils';
 import { MODAL_STYLES, BUTTON_STYLES, COLORS } from '../constants/styles';
+import { api } from '../services/api';
 import '../App.css';
 
 export const ProjectPage: React.FC = () => {
@@ -53,6 +55,7 @@ export const ProjectPage: React.FC = () => {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showAIGenerateModal, setShowAIGenerateModal] = useState(false);
   const [showAIArrangeModal, setShowAIArrangeModal] = useState(false);
+  const [showAIFeedbackModal, setShowAIFeedbackModal] = useState(false);
   const [showArrangementReasoning, setShowArrangementReasoning] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
@@ -233,16 +236,38 @@ export const ProjectPage: React.FC = () => {
     setShowAIArrangeModal(true);
   };
 
+  const handleAIFeedbackClick = () => {
+    setShowAIFeedbackModal(true);
+  };
+
   const handleAIGenerateSuccess = async () => {
     await fetchBlocks();
   };
 
   const handleAIArrangeSuccess = async (reasoning?: string) => {
     await fetchBlocks();
-    if (reasoning) {
-      setArrangementReasoning(reasoning);
-    } else {
-      setArrangementReasoning('');
+    // 프로젝트 데이터 다시 로드하여 최신 arrangement_reasoning 가져오기 (백엔드에서 JSON 형식으로 저장됨)
+    if (projectId) {
+      const projectData = await api.getProject(projectId);
+      if (projectData?.arrangement_reasoning) {
+        setArrangementReasoning(projectData.arrangement_reasoning);
+      } else {
+        setArrangementReasoning('');
+      }
+    }
+  };
+
+  const handleAIFeedbackSuccess = async () => {
+    // 프로젝트 데이터 다시 로드하여 최신 피드백 가져오기
+    if (projectId) {
+      try {
+        const projectData = await api.getProject(projectId);
+        if (projectData?.arrangement_reasoning) {
+          setArrangementReasoning(projectData.arrangement_reasoning);
+        }
+      } catch (error) {
+        logger.error('피드백 로드 실패:', error);
+      }
     }
   };
 
@@ -300,6 +325,7 @@ export const ProjectPage: React.FC = () => {
                 onQuickCreate={handleQuickCreate}
                 onAIClick={handleAIClick}
                 onAIArrangeClick={handleAIArrangeClick}
+                onAIFeedbackClick={handleAIFeedbackClick}
                 onBlockDelete={handleDeleteBlock}
                 onBlockEdit={handleEditBlock}
                 isConnectionMode={mode === 'connection'}
@@ -462,6 +488,14 @@ export const ProjectPage: React.FC = () => {
           blocks={blocks}
           onClose={() => setShowAIArrangeModal(false)}
           onSuccess={handleAIArrangeSuccess}
+        />
+      )}
+
+      {showAIFeedbackModal && projectId && (
+        <AIFeedbackModal
+          projectId={projectId}
+          onClose={() => setShowAIFeedbackModal(false)}
+          onSuccess={handleAIFeedbackSuccess}
         />
       )}
 

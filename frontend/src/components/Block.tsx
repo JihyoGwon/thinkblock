@@ -42,7 +42,7 @@ export const Block: React.FC<BlockProps> = ({
 
   // 레벨에 따른 색상 (밝은 회색+반투명) - useMemo로 최적화
   const levelColor = useMemo(() => {
-    return block.level >= 5 ? LEVEL_BLOCK_COLORS.HIGH : LEVEL_BLOCK_COLORS.LOW;
+    return block.level >= 4 ? LEVEL_BLOCK_COLORS.HIGH : LEVEL_BLOCK_COLORS.LOW;
   }, [block.level]);
 
   const [showDelete, setShowDelete] = React.useState(false);

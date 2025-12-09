@@ -6,8 +6,11 @@
 export const LEVELS = {
   UNASSIGNED: -1,
   MIN: 0,
-  MAX: 5,
+  MAX: 4,
 } as const;
+
+// 드래그 관련 상수
+export const DRAG_THRESHOLD = 5; // 5px 이상 이동해야 드래그로 인정
 
 // 블록 스타일 상수
 export const BLOCK_STYLES = {
@@ -24,8 +27,7 @@ export const LEVEL_BG_COLORS = [
   '#f8f9fa',
   '#f1f3f5',
   '#e9ecef',
-  '#dee2e6',
-  '#ced4da', // level 5
+  '#ced4da', // level 4 - 목표
 ] as const;
 
 // 레벨별 블록 배경색

@@ -482,7 +482,7 @@ def arrange_blocks(
                 project_context += f"기타 참고 사항:\n{additional_info}\n"
             project_context += "\n위 프로젝트 정보를 참고하여 블록 배치를 진행하세요."
         
-        prompt = f"""당신은 프로젝트 오너이자 제품 설계자입니다. 주어진 블록들을 체계적으로 분석하여 적절한 레벨(0-5)에 배치해주세요.
+        prompt = f"""당신은 프로젝트 오너이자 제품 설계자입니다. 주어진 블록들을 체계적으로 분석하여 적절한 레벨(0-4)에 배치해주세요.
 {project_context}
 블록 목록:
 {blocks_text}
@@ -500,17 +500,14 @@ def arrange_blocks(
 - 레벨 3 (고급 기능): 핵심 기능이 완성된 후 추가하는 고급 기능
   특징: 기본 기능이 동작한 후 추가하는 개선 사항
   
-- 레벨 4 (최적화 및 확장): 시스템이 안정화된 후의 최적화 작업
-  특징: 시스템이 잘 동작한 후 추가하는 고급 기능
-  
-- 레벨 5 (목표 달성): 최종적으로 달성하고자 하는 목표, 최상위 성과
+- 레벨 4 (목표 달성): 최종적으로 달성하고자 하는 목표, 최상위 성과
   특징: 모든 기반과 기능이 완성된 후 달성할 수 있는 최종 목표
 
 배치 시 필수 고려사항:
 1. **의존성 관계**: 블록 A가 블록 B에 의존한다면, A는 B보다 낮은 레벨(먼저 해야 함)에 배치
 2. **논리적 순서**: 논리적으로 먼저 완료되어야 하는 작업은 낮은 레벨에
 3. **위험도**: 높은 위험을 가진 작업은 낮은 레벨에 배치하여 조기에 검증
-4. **레벨 분산**: 모든 블록을 레벨 0에 배치하지 말고, 0-5 레벨에 골고루 분산 배치해야 함
+4. **레벨 분산**: 모든 블록을 레벨 0에 배치하지 말고, 0-4 레벨에 골고루 분산 배치해야 함
 
 ## 배치 전 사고 과정 (thinking_process)
 
@@ -522,10 +519,10 @@ def arrange_blocks(
    - 문제점/병목지점을 해결하기 위해 어떤 블록들이 먼저 배치되어야 하는가?
    - 프로젝트의 전체적인 맥락을 고려하여 블록 배치의 방향성을 설정하세요.
 
-2. **레벨 5 (목표) 분석**: 
-   - 원활한 프로젝트 진행과 안정적인 구축을 위해 레벨 5에 배정할 블록은 무엇인가?
+2. **레벨 4 (목표) 분석**: 
+   - 원활한 프로젝트 진행과 안정적인 구축을 위해 레벨 4에 배정할 블록은 무엇인가?
    - 최종 목표로 설정할 수 있는 블록들을 식별하고 그 이유를 설명하세요.
-   - 프로젝트 정보가 있다면, 프로젝트의 최종 목표와 일치하는 블록을 레벨 5에 배치하세요.
+   - 프로젝트 정보가 있다면, 프로젝트의 최종 목표와 일치하는 블록을 레벨 4에 배치하세요.
 
 3. **레벨별 목표 설정**:
    - 각 레벨(0-4)의 목표는 무엇인가?
@@ -555,14 +552,13 @@ def arrange_blocks(
 
 {{
   "thinking_process": {{
-    "level5_analysis": "레벨 5에 배정할 블록과 그 이유",
+    "level4_analysis": "레벨 4에 배정할 블록과 그 이유",
     "level_goals": {{
       "level0": "레벨 0의 목표",
       "level1": "레벨 1의 목표",
       "level2": "레벨 2의 목표",
       "level3": "레벨 3의 목표",
-      "level4": "레벨 4의 목표",
-      "level5": "레벨 5의 목표"
+      "level4": "레벨 4의 목표"
     }},
     "dependency_analysis": "의존성 및 우선순위 분석",
     "designer_advice": "서비스 설계자 관점의 조언 및 개선 제안",
@@ -579,7 +575,7 @@ def arrange_blocks(
 - thinking_process의 각 항목을 상세하고 논리적으로 작성하세요.
 - arrangements 배열에는 모든 블록이 포함되어야 합니다.
 - 각 블록의 reason 필드는 해당 레벨에 배치한 구체적인 이유를 포함해야 합니다.
-- 레벨은 0부터 5까지의 정수여야 하며, 블록들을 다양한 레벨에 분산 배치해야 합니다."""
+- 레벨은 0부터 4까지의 정수여야 하며, 블록들을 다양한 레벨에 분산 배치해야 합니다."""
 
         response = model.generate_content(prompt)
         
@@ -615,18 +611,18 @@ def arrange_blocks(
             if thinking_process:
                 reasoning_parts = []
                 
-                # 레벨 5 분석
-                if thinking_process.get("level5_analysis"):
-                    reasoning_parts.append(f"## 레벨 5 (목표) 분석\n{thinking_process.get('level5_analysis')}")
+                # 레벨 4 분석
+                if thinking_process.get("level4_analysis"):
+                    reasoning_parts.append(f"## 레벨 4 (목표) 분석\n{thinking_process.get('level4_analysis')}")
                 
                 # 레벨별 목표
                 level_goals = thinking_process.get("level_goals", {})
                 if level_goals:
                     reasoning_parts.append("\n## 레벨별 목표")
-                    for level in ["level0", "level1", "level2", "level3", "level4", "level5"]:
+                    for level in ["level0", "level1", "level2", "level3", "level4"]:
                         if level_goals.get(level):
                             level_name = {"level0": "레벨 0 (기반)", "level1": "레벨 1", "level2": "레벨 2", 
-                                        "level3": "레벨 3", "level4": "레벨 4", "level5": "레벨 5 (목표)"}.get(level, level)
+                                        "level3": "레벨 3", "level4": "레벨 4 (목표)"}.get(level, level)
                             reasoning_parts.append(f"- {level_name}: {level_goals.get(level)}")
                 
                 # 의존성 분석
@@ -676,9 +672,9 @@ def arrange_blocks(
         for item in arranged_data:
             block_id = item.get("id")
             level = item.get("level", 0)
-            # level이 0-5 범위를 벗어나면 조정
+            # level이 0-4 범위를 벗어나면 조정
             try:
-                level = max(0, min(5, int(level)))
+                level = max(0, min(4, int(level)))
             except (ValueError, TypeError):
                 print(f"⚠️  레벨 변환 실패: {level}, 기본값 0 사용")
                 level = 0
@@ -722,5 +718,240 @@ def arrange_blocks(
         raise
     except Exception as e:
         print(f"❌ AI 블록 배치 실패: {e}")
+        raise
+
+def generate_feedback(
+    blocks: List[Dict],
+    project_analysis: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    AI를 사용하여 현재 블록 배치에 대한 피드백 생성
+    
+    현재 배치된 블록들을 분석하여 배치 의도, 목적, 개선점, 보완점을 제공합니다.
+    블록을 변경하지 않고 분석만 수행합니다.
+    
+    Args:
+        blocks: 현재 배치된 블록 리스트 (각 블록은 id, title, description, level, order, category, dependencies 포함)
+        project_analysis: 저장된 프로젝트 분석 (선택사항)
+    
+    Returns:
+        {
+            "feedback": "전체 피드백 텍스트",
+            "thinking_process": {...}  # 구조화된 분석 결과
+        }
+    """
+    try:
+        model = GenerativeModel("gemini-2.0-flash-exp")
+        
+        # 배치된 블록들만 필터링 (레벨 0 이상)
+        arranged_blocks = [block for block in blocks if block.get('level', -1) >= 0]
+        
+        if not arranged_blocks:
+            return {
+                "feedback": "배치된 블록이 없습니다. 블록을 배치한 후 피드백을 받을 수 있습니다.",
+                "thinking_process": {}
+            }
+        
+        # 레벨별로 블록 그룹화
+        blocks_by_level = {}
+        for block in arranged_blocks:
+            level = block.get('level', 0)
+            if level not in blocks_by_level:
+                blocks_by_level[level] = []
+            blocks_by_level[level].append(block)
+        
+        # 블록 정보를 문자열로 변환
+        blocks_info = []
+        for level in sorted(blocks_by_level.keys()):
+            level_blocks = blocks_by_level[level]
+            blocks_info.append(f"\n## 레벨 {level} ({len(level_blocks)}개 블록)")
+            for block in level_blocks:
+                block_str = f"  - 블록 ID: {block.get('id', '')}\n"
+                block_str += f"    제목: {block.get('title', '')}\n"
+                if block.get('description'):
+                    block_str += f"    설명: {block.get('description', '')}\n"
+                if block.get('category'):
+                    block_str += f"    카테고리: {block.get('category')}\n"
+                if block.get('dependencies'):
+                    deps = block.get('dependencies', [])
+                    block_str += f"    의존성: {', '.join(deps)}\n"
+                blocks_info.append(block_str)
+        
+        blocks_text = "\n".join(blocks_info)
+        
+        # 레벨 분포 요약
+        level_distribution = {}
+        for block in arranged_blocks:
+            level = block.get('level', 0)
+            level_distribution[level] = level_distribution.get(level, 0) + 1
+        
+        distribution_summary = ", ".join([f"레벨 {k}: {v}개" for k, v in sorted(level_distribution.items())])
+        
+        # 프로젝트 분석 컨텍스트
+        project_context = ""
+        if project_analysis:
+            project_context = f"\n\n## 프로젝트 분석 (AI 생성)\n{project_analysis}\n\n위 프로젝트 분석을 참고하여 피드백을 제공하세요."
+        
+        # 빈 레벨 확인 (실제로 사용 가능한 레벨 0-4 중 블록이 없는 레벨만 표시)
+        available_levels = set(range(5))  # 0-4 레벨
+        used_levels = set(blocks_by_level.keys())
+        empty_levels = sorted(available_levels - used_levels)
+        empty_levels_text = f"\n빈 레벨: {', '.join(map(str, empty_levels))}" if empty_levels else "\n모든 레벨(0-4)에 블록이 배치되어 있습니다."
+        
+        prompt = f"""당신은 프로젝트 오너이자 제품 설계자입니다. 현재 배치된 블록들을 체계적으로 분석하여 피드백을 제공해주세요.
+
+{project_context}
+
+## 현재 블록 배치 상태
+
+레벨 분포: {distribution_summary}
+{empty_levels_text}
+
+**중요**: 아래 블록 목록에 실제로 배치된 모든 블록이 포함되어 있습니다. 레벨 분포와 블록 목록을 정확히 확인한 후 피드백을 제공하세요.
+
+블록 목록:
+{blocks_text}
+
+레벨 배치 기준:
+- 레벨 0 (기반): 가장 먼저 구축해야 할 기반 인프라, 기본 설정, 필수 전제 조건
+- 레벨 1: 기반 위에 구축되는 핵심 기능의 첫 단계
+- 레벨 2: 레벨 1의 확장 또는 추가 핵심 기능
+- 레벨 3: 고급 기능 또는 핵심 기능의 확장
+- 레벨 4 (목표): 최종적으로 달성하고자 하는 목표, 최상위 성과
+
+**중요**: 레벨 구조는 기반(0) → 1 → 2 → 3 → 목표(4) 순서로 구성됩니다.
+
+## 피드백 분석 사고 과정 (thinking_process)
+
+다음 사고 과정을 거쳐 체계적으로 분석하세요:
+
+1. **현재 배치 상태 분석**:
+   - 위에 제공된 레벨 분포와 블록 목록을 정확히 확인하세요.
+   - 현재 블록 배치의 전체적인 구조는 어떻게 되어 있는가?
+   - 레벨 분포가 적절한가? (모든 블록이 한 레벨에 몰려있지 않은가?)
+   - 각 레벨에 배치된 블록들이 해당 레벨의 목적에 부합하는가?
+   - **주의**: 블록 목록에 실제로 표시된 레벨만 분석하세요. 블록 목록에 없는 레벨은 비어있다고 판단하지 마세요.
+
+2. **배치 의도 분석**:
+   - 현재 배치가 의도한 목표와 일치하는가?
+   - 프로젝트의 핵심 목표를 달성하기 위한 논리적 순서가 잘 구성되어 있는가?
+   - 레벨 간의 흐름이 자연스러운가?
+
+3. **배치 목적 평가**:
+   - 각 레벨의 목적이 명확하게 드러나는가?
+   - 레벨 0의 기반 블록들이 충분한가?
+   - 레벨 4의 목표 블록들이 최종 목표를 잘 나타내는가?
+
+4. **개선점 제안**:
+   - 레벨 조정이 필요한 블록이 있는가? (어떤 블록을 어느 레벨로 이동하면 좋을지)
+   - 의존성 관계가 올바르게 반영되어 있는가? (의존성이 있는데 레벨이 잘못된 경우)
+   - 레벨 간의 논리적 흐름을 개선할 수 있는 방법은?
+
+5. **보완점 제안**:
+   - 누락된 중요한 블록이 있는가?
+   - 특정 레벨에 블록이 부족하거나 과도한가?
+   - 프로젝트의 안정성과 성공 가능성을 높이기 위해 추가로 고려할 사항은?
+
+6. **레벨별 상세 평가**:
+   - 실제로 블록이 배치된 각 레벨의 블록 구성이 적절한가?
+   - 각 레벨에서 달성해야 할 목표가 명확한가?
+   - 각 레벨의 블록들이 서로 잘 연계되어 있는가?
+   - **주의**: 실제로 블록이 배치된 레벨만 평가하세요. 빈 레벨에 대해서는 별도로 언급하지 마세요.
+
+## 응답 형식
+
+다음 JSON 형식으로 응답해주세요:
+
+{{
+  "thinking_process": {{
+    "current_state_analysis": "현재 배치 상태 분석",
+    "intention_analysis": "배치 의도 분석",
+    "purpose_evaluation": "배치 목적 평가",
+    "improvement_suggestions": "개선점 제안 (구체적인 레벨 조정 제안 포함)",
+    "complementary_suggestions": "보완점 제안 (누락된 블록, 추가 고려사항)",
+    "level_by_level_review": "레벨별 상세 평가 (실제로 블록이 배치된 레벨에 대한 평가)"
+  }},
+  "feedback": "전체 피드백 요약 (마크다운 형식, 사용자에게 보여질 최종 피드백)"
+}}
+
+중요 사항:
+- thinking_process의 각 항목을 상세하고 논리적으로 작성하세요.
+- feedback 필드는 반드시 포함해야 하며, 사용자가 읽기 쉽도록 마크다운 형식으로 작성하세요.
+- feedback은 다음 구조를 따라야 합니다:
+  1. 프로젝트 피드백 요약 (간단한 전체 평가)
+  2. 개선 사항 (구체적인 레벨 조정 및 블록 이동 제안)
+  3. 보완 사항 (추가로 필요한 블록이나 고려사항)
+- 개선점과 보완점은 구체적이고 실행 가능한 제안을 포함하세요.
+- 긍정적인 부분도 언급하면서, 개선할 부분을 건설적으로 제시하세요.
+- feedback은 thinking_process의 내용을 요약하되, 사용자에게 보여질 최종 피드백 형식으로 작성하세요."""
+
+        response = model.generate_content(prompt)
+        
+        # 응답 파싱
+        response_data = _parse_ai_response(response.text)
+        
+        # 디버깅: 파싱된 데이터 출력
+        print(f"🔍 파싱된 피드백 데이터: {type(response_data)}")
+        
+        # 응답 형식 확인
+        if isinstance(response_data, dict):
+            thinking_process = response_data.get("thinking_process", {})
+            feedback = response_data.get("feedback", "")
+            
+            # 디버깅: feedback 필드 확인
+            print(f"🔍 feedback 필드 존재 여부: {bool(feedback)}")
+            if feedback:
+                print(f"🔍 feedback 길이: {len(feedback)} 문자")
+                print(f"🔍 feedback 일부 (처음 500자):\n{feedback[:500]}")
+            
+            if not feedback:
+                # feedback이 없으면 thinking_process를 기반으로 생성
+                print(f"⚠️  feedback 필드가 없어 thinking_process를 기반으로 생성")
+                feedback_parts = []
+                
+                if thinking_process.get("current_state_analysis"):
+                    feedback_parts.append(f"## 현재 배치 상태 분석\n{thinking_process.get('current_state_analysis')}")
+                
+                if thinking_process.get("intention_analysis"):
+                    feedback_parts.append(f"\n## 배치 의도 분석\n{thinking_process.get('intention_analysis')}")
+                
+                if thinking_process.get("purpose_evaluation"):
+                    feedback_parts.append(f"\n## 배치 목적 평가\n{thinking_process.get('purpose_evaluation')}")
+                
+                if thinking_process.get("improvement_suggestions"):
+                    feedback_parts.append(f"\n## 개선점 제안\n{thinking_process.get('improvement_suggestions')}")
+                
+                if thinking_process.get("complementary_suggestions"):
+                    feedback_parts.append(f"\n## 보완점 제안\n{thinking_process.get('complementary_suggestions')}")
+                
+                if thinking_process.get("level_by_level_review"):
+                    feedback_parts.append(f"\n## 레벨별 상세 평가\n{thinking_process.get('level_by_level_review')}")
+                
+                feedback = "\n\n".join(feedback_parts)
+                print(f"✅ thinking_process 기반으로 feedback 생성 완료: {len(feedback)} 문자")
+            else:
+                print(f"✅ AI가 생성한 feedback 사용: {len(feedback)} 문자")
+            
+            print(f"✅ AI 피드백 생성 성공: {len(feedback)} 문자")
+            if thinking_process:
+                print(f"✅ thinking_process 포함됨")
+            
+            return {
+                "feedback": feedback,
+                "thinking_process": thinking_process
+            }
+        else:
+            # 예상치 못한 형식인 경우
+            feedback_text = str(response_data) if response_data else "피드백을 생성할 수 없습니다."
+            return {
+                "feedback": feedback_text,
+                "thinking_process": {}
+            }
+        
+    except ValueError as e:
+        # _parse_ai_response에서 발생한 ValueError를 그대로 전달
+        raise
+    except Exception as e:
+        print(f"❌ AI 피드백 생성 실패: {e}")
         raise
 

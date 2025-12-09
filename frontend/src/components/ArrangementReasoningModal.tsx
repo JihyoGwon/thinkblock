@@ -6,10 +6,38 @@ interface ArrangementReasoningModalProps {
   onClose: () => void;
 }
 
+// JSON 형식 파싱 및 타입 추출
+const parseReasoning = (reasoning: string): { type: string; content: string } => {
+  if (!reasoning) {
+    return { type: 'arrangement', content: '' };
+  }
+  
+  try {
+    // JSON 형식인지 확인
+    const parsed = JSON.parse(reasoning);
+    if (parsed && typeof parsed === 'object' && 'type' in parsed && 'content' in parsed) {
+      return {
+        type: parsed.type || 'arrangement',
+        content: parsed.content || ''
+      };
+    }
+  } catch (e) {
+    // JSON 파싱 실패 시 기존 문자열로 간주 (arrangement 타입)
+  }
+  
+  // 기존 문자열 형식인 경우 arrangement로 간주
+  return { type: 'arrangement', content: reasoning };
+};
+
 export const ArrangementReasoningModal: React.FC<ArrangementReasoningModalProps> = ({
   reasoning,
   onClose,
 }) => {
+  const { type, content } = parseReasoning(reasoning);
+  
+  // 제목은 항상 "AI 피드백"으로 통일
+  const title = 'AI 피드백';
+  
   return (
     <>
       <div style={MODAL_STYLES.overlay} onClick={onClose} />
@@ -25,7 +53,7 @@ export const ArrangementReasoningModal: React.FC<ArrangementReasoningModalProps>
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ margin: '0 0 24px 0', fontSize: '20px', fontWeight: '600', color: COLORS.text.primary }}>
-          AI 블록 배치 이유
+          {title}
         </h2>
 
         <div
@@ -41,7 +69,7 @@ export const ArrangementReasoningModal: React.FC<ArrangementReasoningModalProps>
             wordBreak: 'break-word',
           }}
         >
-          {reasoning || '배치 이유가 제공되지 않았습니다.'}
+          {content || (type === 'feedback' ? '피드백이 제공되지 않았습니다.' : '배치 이유가 제공되지 않았습니다.')}
         </div>
 
         <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>

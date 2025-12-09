@@ -188,6 +188,19 @@ export const api = {
     }
   },
 
+  // AI 피드백 생성
+  getFeedback: async (projectId: string): Promise<{ feedback: string; thinking_process: any }> => {
+    try {
+      const response = await apiClient.post(`${API_BASE_URL}/api/projects/${projectId}/ai/feedback`);
+      return {
+        feedback: response.data.feedback || '',
+        thinking_process: response.data.thinking_process || {}
+      };
+    } catch (error) {
+      return handleApiError(error, 'AI 피드백 생성에 실패했습니다.');
+    }
+  },
+
   // 의존성 추가
   addDependency: async (projectId: string, blockId: string, dependencyId: string, color?: string): Promise<Block> => {
     try {
